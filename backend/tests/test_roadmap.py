@@ -24,12 +24,25 @@ def A(id, name="A", desc="", unlocked=False, gp=50.0, deps=None):
 
 # ---------- rarity_tier ----------
 def test_rarity_tiers():
-    assert rarity_tier(0.4) == "ultra"
-    assert rarity_tier(4.9) == "ultra"
-    assert rarity_tier(5.0) == "rare"
-    assert rarity_tier(29.9) == "rare"
-    assert rarity_tier(30.0) == "common"
-    assert rarity_tier(84.0) == "common"
+    assert rarity_tier(0.4) == "mythic"
+    assert rarity_tier(0.99) == "mythic"
+    assert rarity_tier(2.0) == "legendary"
+    assert rarity_tier(4.9) == "legendary"
+    assert rarity_tier(7.5) == "epic"
+    assert rarity_tier(15.0) == "rare"
+    assert rarity_tier(30.0) == "uncommon"
+    assert rarity_tier(60.0) == "common"
+
+
+def test_rarity_tier_boundaries():
+    # Межі включні знизу для вищого порогу: p < MAX -> нижчий тір.
+    assert rarity_tier(0.5) == "mythic"       # p < 1
+    assert rarity_tier(1.0) == "legendary"    # 1 <= p < 5
+    assert rarity_tier(5.0) == "epic"         # 5 <= p < 10
+    assert rarity_tier(10.0) == "rare"        # 10 <= p < 20
+    assert rarity_tier(20.0) == "uncommon"    # 20 <= p < 50
+    assert rarity_tier(50.0) == "common"      # p >= 50
+    assert rarity_tier(90.0) == "common"
 
 
 # ---------- is_grind ----------

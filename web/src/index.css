@@ -3,9 +3,37 @@
 @tailwind utilities;
 
 @layer base {
+  /* --- Theme tokens (space-separated RGB, read by Tailwind as rgb(var / a)) --- */
+  /* Default = dark graphite. */
   :root {
     color-scheme: dark;
+    --color-base: 14 15 19;
+    --color-surface: 22 24 29;
+    --color-raised: 28 31 38;
+    --color-line: 40 44 52;
+    --color-ink: 232 234 237;
+    --color-muted: 138 144 153;
+    /* Accent (violet by default) — overridden by [data-accent]. */
+    --color-accent: 139 92 246;
+    --color-accent-dim: 109 63 212;
+    /* Elevation: heavy black drop + faint light top-sheen (graphite depth). */
+    --shadow-panel:
+      inset 0 1px 0 rgba(232, 234, 237, 0.04),
+      0 12px 30px -18px rgba(0, 0, 0, 0.8);
+    --shadow-panel-hover:
+      inset 0 1px 0 rgba(232, 234, 237, 0.04),
+      0 12px 30px -18px rgba(0, 0, 0, 0.8),
+      0 0 20px -8px rgb(var(--color-accent) / 0.4);
   }
+
+  /* Світлу тему тимчасово прибрано — додамо пізніше. Лишається лише темна. */
+
+  /* Accent palettes — apply on any theme via [data-accent] on <html>. */
+  :root[data-accent="blue"]    { --color-accent: 76 141 255;  --color-accent-dim: 37 99 235; }
+  :root[data-accent="green"]   { --color-accent: 63 206 124;  --color-accent-dim: 34 160 94; }
+  :root[data-accent="gold"]    { --color-accent: 245 166 35;  --color-accent-dim: 202 138 4; }
+  :root[data-accent="magenta"] { --color-accent: 236 72 153;  --color-accent-dim: 190 40 120; }
+  /* violet is the :root default */
 
   html,
   body,
@@ -13,20 +41,20 @@
     height: 100%;
   }
 
+  /* Command-center backdrop: an accent glow from above + a faint dot-grid HUD.
+     Both derive from theme tokens, so they follow theme/accent automatically. */
   body {
     @apply bg-base text-ink font-body antialiased;
     background-image:
       radial-gradient(
-        ellipse 80% 50% at 50% -10%,
-        rgba(78, 163, 214, 0.1),
+        ellipse 70% 45% at 50% -8%,
+        rgb(var(--color-accent) / 0.14),
         transparent 60%
       ),
-      linear-gradient(rgba(38, 52, 69, 0.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(38, 52, 69, 0.04) 1px, transparent 1px);
+      radial-gradient(rgb(var(--color-ink) / 0.035) 1px, transparent 1px);
     background-size:
       100% 100%,
-      44px 44px,
-      44px 44px;
+      22px 22px;
     background-attachment: fixed;
   }
 
@@ -51,16 +79,24 @@
 }
 
 @layer components {
+  /* HUD readout caption: mono, uppercase, wide tracking. */
   .eyebrow {
-    @apply font-mono text-[0.68rem] uppercase tracking-[0.28em] text-muted;
+    @apply font-mono text-[0.66rem] uppercase tracking-[0.24em] text-muted;
   }
 
+  /* HUD panel: graphite surface, crisp cool border, faint top sheen.
+     Elevation comes from --shadow-panel, which swaps per theme. */
   .panel {
-    @apply rounded-xl border border-line/80 bg-surface/70 backdrop-blur-sm;
+    @apply rounded-lg border border-line/80 bg-surface/70 backdrop-blur-sm;
+    box-shadow: var(--shadow-panel);
   }
 
+  /* Consistent card micro-hover: lift 2px, border + faint accent aura. */
   .panel-hover {
-    @apply transition-colors duration-200 hover:border-accent/50 hover:bg-raised/60;
+    @apply transition-[border-color,background-color,transform,box-shadow] duration-200 ease-out hover:-translate-y-0.5 hover:border-accent/50 hover:bg-raised/60;
+  }
+  .panel-hover:hover {
+    box-shadow: var(--shadow-panel-hover);
   }
 }
 
@@ -69,8 +105,10 @@
   *::before,
   *::after {
     animation-duration: 0.001ms !important;
+    animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+    transition-delay: 0ms !important;
   }
 }
 
@@ -85,20 +123,897 @@
   }
 }
 
+/* backwards (не both): кінцевий кадр = базові стилі, тож після завершення
+   transform звільняється для hover-ліфтів і базових translate-класів. */
 .animate-rise {
-  animation: rise 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation: rise 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
 }
 
+/* Вхід лише прозорістю — для елементів із власним базовим transform
+   (напр. підняте 1-ше місце п'єдесталу). */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade {
+  animation: fade-in 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
+}
+
+/* Loot-drop pulse: an epic-violet aura breathing on emblems / prestige items. */
 @keyframes pulse-gold {
   0%,
   100% {
-    box-shadow: 0 0 0 1px rgba(232, 184, 75, 0.4), 0 0 16px -4px rgba(232, 184, 75, 0.5);
+    box-shadow:
+      0 0 0 1px rgba(139, 92, 246, 0.4),
+      0 0 16px -5px rgba(139, 92, 246, 0.55);
   }
   50% {
-    box-shadow: 0 0 0 1px rgba(232, 184, 75, 0.7), 0 0 24px -2px rgba(232, 184, 75, 0.8);
+    box-shadow:
+      0 0 0 1px rgba(139, 92, 246, 0.75),
+      0 0 26px -3px rgba(139, 92, 246, 0.85);
   }
 }
 
 .glow-gold {
   animation: pulse-gold 2.6s ease-in-out infinite;
+}
+
+/* Softer, slower breathing aura — active nav item in the sidebar. */
+@keyframes pulse-soft {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(139, 92, 246, 0.4),
+      0 0 14px -6px rgba(139, 92, 246, 0.45);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(139, 92, 246, 0.6),
+      0 0 20px -4px rgba(139, 92, 246, 0.7);
+  }
+}
+
+.glow-soft {
+  animation: pulse-soft 3.6s ease-in-out infinite;
+}
+
+/* Very subtle pulse for violet quest-line nodes (mythic/gold keep theirs). */
+@keyframes pulse-node {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 4px rgb(var(--color-base) / 1),
+      0 0 10px -3px rgb(var(--color-accent) / 0.5);
+  }
+  50% {
+    box-shadow:
+      0 0 0 4px rgb(var(--color-base) / 1),
+      0 0 16px -2px rgb(var(--color-accent) / 0.85);
+  }
+}
+
+.glow-node {
+  animation: pulse-node 4.2s ease-in-out infinite;
+}
+
+/* ── Signature moment: the loot-drop unlock burst ─────────────────────
+   Button pop + expanding violet→gold glow ring + 8 loot sparks.
+   Everything is transform/opacity/box-shadow; sparks end at opacity:0 via
+   fill-mode both, so reduced-motion (duration→0) leaves only the button. */
+@keyframes unlock-pop {
+  0% {
+    transform: scale(0.86);
+  }
+  45% {
+    transform: scale(1.07);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes unlock-ring {
+  0% {
+    opacity: 0.9;
+    transform: scale(0.75);
+    box-shadow:
+      0 0 0 2px rgba(139, 92, 246, 0.9),
+      0 0 18px 2px rgba(139, 92, 246, 0.55);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.9);
+    box-shadow:
+      0 0 0 2px rgba(245, 166, 35, 0.8),
+      0 0 26px 6px rgba(245, 166, 35, 0.45);
+  }
+}
+
+@keyframes spark-fly {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--sx), var(--sy)) scale(0.25);
+  }
+}
+
+.unlock-burst {
+  position: relative;
+}
+
+.unlock-pop {
+  animation: unlock-pop 0.4s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.unlock-burst::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: 0.5rem;
+  pointer-events: none;
+  animation: unlock-ring 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+}
+
+.unlock-burst .spark {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  height: 5px;
+  width: 5px;
+  margin: -2.5px 0 0 -2.5px;
+  border-radius: 9999px;
+  pointer-events: none;
+  animation: spark-fly 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* ── Hover sheen sweep: diagonal light band sliding across covers ─────
+   Idle state is opacity:0, so it is invisible when animations are off. */
+@keyframes sheen-sweep {
+  from {
+    opacity: 1;
+    transform: translateX(-70%) skewX(-12deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(70%) skewX(-12deg);
+  }
+}
+
+.sheen-sweep::after {
+  content: "";
+  position: absolute;
+  inset: -20% -40%;
+  background: linear-gradient(
+    105deg,
+    transparent 42%,
+    rgba(232, 234, 237, 0.13) 50%,
+    transparent 58%
+  );
+  transform: translateX(-70%) skewX(-12deg);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.group:hover .sheen-sweep::after {
+  animation: sheen-sweep 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* ── ProgressBar sheen: light band drifting along the fill ────────────
+   Resting background-position keeps the highlight off-canvas, so the
+   static (reduced-motion) state shows a plain fill. */
+@keyframes progress-sheen {
+  0% {
+    background-position: 150% 0;
+  }
+  60% {
+    background-position: -50% 0;
+  }
+  100% {
+    background-position: -50% 0;
+  }
+}
+
+.progress-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.28) 50%,
+    transparent 65%
+  );
+  background-size: 250% 100%;
+  background-repeat: no-repeat;
+  background-position: 150% 0;
+  animation: progress-sheen 2.5s ease-in-out infinite;
+}
+
+/* ── TopBar bell: quick ring-swing once every ~6s (only when unread) ── */
+@keyframes bell-swing {
+  0%,
+  12%,
+  100% {
+    transform: rotate(0deg);
+  }
+  2% {
+    transform: rotate(11deg);
+  }
+  5% {
+    transform: rotate(-8deg);
+  }
+  8% {
+    transform: rotate(5deg);
+  }
+  10% {
+    transform: rotate(-2deg);
+  }
+}
+
+.bell-swing {
+  display: inline-flex;
+  transform-origin: 50% 15%;
+  animation: bell-swing 6s ease-in-out 1.5s infinite;
+}
+
+/* Badge pop-in when the unread count changes (re-keyed in React). */
+@keyframes badge-pop {
+  0% {
+    transform: scale(0.3);
+  }
+  60% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.badge-pop {
+  animation: badge-pop 0.3s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* ── Ambient background: living cosmos ────────────────────────────────
+   1) Iridescent swirl: two huge counter-rotating conic gradients
+      (accent → rare-blue → mythic-magenta), heavily blurred. Their
+      interference makes the backdrop visibly "переливатись".
+   2) Starfield: twinkling stars + occasional shooting stars.
+   3) Rising loot embers (kept from the first pass).
+   Fixed layer behind all content (AmbientBackground.tsx); panels are
+   translucent + backdrop-blur, so everything gains depth behind them.
+   Only transform/opacity animate. Reduced motion: swirls freeze as a
+   static nebula, stars rest visible at mid-opacity, embers invisible. */
+.swirl {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 160vmax;
+  height: 160vmax;
+  margin: -80vmax 0 0 -80vmax;
+  border-radius: 9999px;
+  filter: blur(110px);
+  will-change: transform;
+}
+
+.swirl-a {
+  opacity: 0.34;
+  background: conic-gradient(
+    from 0deg,
+    rgb(var(--color-accent) / 0.55),
+    rgba(76, 141, 255, 0.3),
+    rgba(236, 72, 153, 0.4),
+    rgba(76, 141, 255, 0.22),
+    rgb(var(--color-accent) / 0.55)
+  );
+  animation: swirl-spin 46s linear infinite;
+}
+
+.swirl-b {
+  opacity: 0.22;
+  background: conic-gradient(
+    from 140deg,
+    rgba(236, 72, 153, 0.42),
+    rgb(var(--color-accent) / 0.3),
+    rgba(76, 141, 255, 0.42),
+    rgba(245, 166, 35, 0.14),
+    rgba(236, 72, 153, 0.42)
+  );
+  animation: swirl-spin-rev 64s linear infinite;
+}
+
+/* Breathing depth on top of rotation: scale oscillates slowly. */
+@keyframes swirl-spin {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.12);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+@keyframes swirl-spin-rev {
+  0% {
+    transform: rotate(360deg) scale(1.1);
+  }
+  50% {
+    transform: rotate(180deg) scale(0.96);
+  }
+  100% {
+    transform: rotate(0deg) scale(1.1);
+  }
+}
+
+
+/* Twinkling stars: tiny glowing dots, each with its own phase. */
+.star {
+  position: absolute;
+  border-radius: 9999px;
+  background: rgb(var(--color-ink) / 0.9);
+  box-shadow: 0 0 6px 1px rgb(var(--color-ink) / 0.25);
+  opacity: 0.5; /* static resting state (reduced motion) still shows a sky */
+  animation: star-twinkle ease-in-out infinite;
+  will-change: opacity, transform;
+}
+
+.star--accent {
+  background: rgb(var(--color-accent) / 0.95);
+  box-shadow: 0 0 8px 2px rgb(var(--color-accent) / 0.4);
+}
+
+.star--mythic {
+  background: rgba(236, 72, 153, 0.95);
+  box-shadow: 0 0 8px 2px rgba(236, 72, 153, 0.4);
+}
+
+@keyframes star-twinkle {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(0.75);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.15);
+  }
+}
+
+/* Shooting star: a thin light streak darting diagonally, then long idle. */
+.shooting-star {
+  position: absolute;
+  width: 130px;
+  height: 1.5px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(var(--color-ink) / 0.85),
+    rgb(var(--color-accent) / 0.9)
+  );
+  opacity: 0;
+  transform: rotate(24deg);
+  animation: shoot linear infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes shoot {
+  0% {
+    opacity: 0;
+    transform: rotate(24deg) translateX(0);
+  }
+  1.5% {
+    opacity: 0.9;
+  }
+  6% {
+    opacity: 0;
+    transform: rotate(24deg) translateX(46vw);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(24deg) translateX(46vw);
+  }
+}
+
+/* Loot embers: tiny sparks rising through the HUD like dust in lamplight. */
+.ember {
+  position: absolute;
+  bottom: -2vh;
+  border-radius: 9999px;
+  opacity: 0;
+  animation-name: ember-rise;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes ember-rise {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.55;
+  }
+  55% {
+    transform: translate(1.4vw, -58vh);
+    opacity: 0.3;
+  }
+  100% {
+    transform: translate(-1vw, -110vh);
+    opacity: 0;
+  }
+}
+
+/* ── Background variant: AURORA — polar lights (green/teal), unlike the
+   violet HUD everywhere else. Its own identity: північне сяйво. ─────── */
+.aurora {
+  position: absolute;
+  width: 55vw;
+  height: 55vw;
+  border-radius: 9999px;
+  filter: blur(90px);
+  will-change: transform;
+}
+
+.aurora-a {
+  top: -22%;
+  left: -12%;
+  background: radial-gradient(circle, rgba(63, 206, 124, 0.2), transparent 65%);
+  animation: aurora-drift-a 26s ease-in-out infinite alternate;
+}
+
+.aurora-b {
+  bottom: -28%;
+  right: -14%;
+  background: radial-gradient(circle, rgba(45, 212, 191, 0.16), transparent 65%);
+  animation: aurora-drift-b 34s ease-in-out infinite alternate;
+}
+
+.aurora-c {
+  top: 32%;
+  left: 58%;
+  width: 38vw;
+  height: 38vw;
+  background: radial-gradient(circle, rgba(76, 141, 255, 0.12), transparent 65%);
+  animation: aurora-drift-c 40s ease-in-out infinite alternate;
+}
+
+/* Aurora curtain: a tall soft band waving like справжнє полярне сяйво. */
+.aurora-curtain {
+  position: absolute;
+  top: -10%;
+  left: 20%;
+  width: 55%;
+  height: 60%;
+  background: linear-gradient(
+    180deg,
+    rgba(63, 206, 124, 0.18),
+    rgba(45, 212, 191, 0.08) 55%,
+    transparent
+  );
+  filter: blur(40px);
+  transform: skewX(-12deg);
+  animation: curtain-wave 18s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes curtain-wave {
+  from {
+    transform: skewX(-14deg) translateX(-4vw) scaleY(1);
+  }
+  to {
+    transform: skewX(-6deg) translateX(5vw) scaleY(1.12);
+  }
+}
+
+@keyframes aurora-drift-a {
+  from { transform: translate(0, 0) scale(1); }
+  to { transform: translate(6vw, 5vh) scale(1.18); }
+}
+
+@keyframes aurora-drift-b {
+  from { transform: translate(0, 0) scale(1.12); }
+  to { transform: translate(-5vw, -7vh) scale(0.94); }
+}
+
+@keyframes aurora-drift-c {
+  from { transform: translate(0, 0) scale(0.9); }
+  to { transform: translate(-9vw, 7vh) scale(1.12); }
+}
+
+/* ── Background variant: RAIN — matrix-green digital streaks. Its own
+   identity: терміналова зелень, а не акцент UI. ─────────────────────── */
+.rain-drop {
+  position: absolute;
+  top: -25vh;
+  width: 2px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(63, 206, 124, 0.55) 70%,
+    rgba(185, 255, 205, 0.85)
+  );
+  opacity: 0;
+  animation-name: rain-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes rain-fall {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  6% {
+    opacity: 0.7;
+  }
+  85% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(135vh);
+    opacity: 0;
+  }
+}
+
+/* ── Background variant: GRID — synthwave floor + glowing horizon ────── */
+.synth-wrap {
+  position: absolute;
+  inset: 0;
+  perspective: 420px;
+  overflow: hidden;
+}
+
+.synth-plane {
+  position: absolute;
+  left: -60%;
+  top: 52%;
+  width: 220%;
+  height: 220%;
+  transform-origin: 50% 0;
+  transform: rotateX(62deg);
+  /* Synthwave identity: hot-pink × cyan, not the UI accent. */
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      rgba(34, 211, 238, 0.24) 0 1.5px,
+      transparent 1.5px 56px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 71, 179, 0.26) 0 1.5px,
+      transparent 1.5px 56px
+    );
+  animation: grid-scroll 1.6s linear infinite;
+  will-change: background-position;
+}
+
+@keyframes grid-scroll {
+  from {
+    background-position: 0 0, 0 0;
+  }
+  to {
+    background-position: 0 0, 0 56px;
+  }
+}
+
+/* Horizon glow line where the floor meets the sky. */
+.synth-horizon {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 52%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(34, 211, 238, 0.85),
+    rgba(255, 71, 179, 0.85),
+    transparent
+  );
+  box-shadow: 0 0 24px 4px rgba(255, 71, 179, 0.45);
+  animation: horizon-breathe 5s ease-in-out infinite;
+}
+
+/* Retro sun bloom above the horizon (magenta→cyan sunset). */
+.synth-sky {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 26%;
+  height: 26%;
+  background: radial-gradient(
+    ellipse 45% 100% at 50% 100%,
+    rgba(255, 71, 179, 0.3),
+    rgba(34, 211, 238, 0.1) 60%,
+    transparent 75%
+  );
+}
+
+@keyframes horizon-breathe {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ── Background variant: FIREFLIES — warm amber dusk. Its own identity:
+   літній вечір, бурштинові вогники (зрідка зелені), теплий низ. ─────── */
+.firefly-dusk {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 90% 45% at 50% 108%,
+    rgba(245, 166, 35, 0.12),
+    rgba(120, 70, 20, 0.06) 55%,
+    transparent 75%
+  );
+}
+
+.firefly {
+  position: absolute;
+  border-radius: 9999px;
+  background: rgba(245, 166, 35, 0.9);
+  box-shadow: 0 0 10px 2px rgba(245, 166, 35, 0.45);
+  opacity: 0.4;
+  animation-name: firefly-drift;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+
+.firefly--green {
+  background: rgba(163, 230, 53, 0.85);
+  box-shadow: 0 0 10px 2px rgba(163, 230, 53, 0.4);
+}
+
+@keyframes firefly-drift {
+  0%,
+  100% {
+    transform: translate(0, 0);
+    opacity: 0.15;
+  }
+  20% {
+    opacity: 0.75;
+  }
+  35% {
+    transform: translate(3.5vw, -5vh);
+    opacity: 0.35;
+  }
+  60% {
+    transform: translate(-2.5vw, -8.5vh);
+    opacity: 0.8;
+  }
+  80% {
+    transform: translate(2vw, -3vh);
+    opacity: 0.25;
+  }
+}
+
+/* ── Background variant: STATIC — a frozen nebula. Zero animation, but
+   still a scene: gradient sky + fixed stars. Для тих, кому рух заважає. */
+.static-nebula {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      ellipse 65% 55% at 18% 8%,
+      rgb(var(--color-accent) / 0.18),
+      transparent 60%
+    ),
+    radial-gradient(
+      ellipse 55% 45% at 85% 85%,
+      rgba(76, 141, 255, 0.13),
+      transparent 65%
+    ),
+    radial-gradient(
+      ellipse 40% 35% at 70% 25%,
+      rgba(236, 72, 153, 0.09),
+      transparent 65%
+    );
+}
+
+/* Fixed star: same look as .star but no animation at all. */
+.star-static {
+  position: absolute;
+  border-radius: 9999px;
+  background: rgb(var(--color-ink) / 0.85);
+  box-shadow: 0 0 6px 1px rgb(var(--color-ink) / 0.25);
+}
+
+
+/* ── Dashboard liveliness ─────────────────────────────────────────────
+   Ambient hero blobs drift, avatar ring breathes, numbers pulse once.
+   All transform/opacity/box-shadow only → frozen under reduced-motion. */
+
+/* Hero backdrop blobs: slow diagonal drift + gentle scale breathing. */
+@keyframes float-blob {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(16px, -14px) scale(1.14);
+  }
+}
+.float-blob {
+  animation: float-blob 13s ease-in-out infinite;
+}
+.float-blob-alt {
+  animation: float-blob 19s ease-in-out infinite reverse;
+}
+
+/* Breathing accent ring — hero avatar feels "powered on". */
+@keyframes ring-breathe {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgb(var(--color-accent) / 0.45),
+      0 0 16px -5px rgb(var(--color-accent) / 0.5);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgb(var(--color-accent) / 0.75),
+      0 0 26px -2px rgb(var(--color-accent) / 0.85);
+  }
+}
+.ring-breathe {
+  animation: ring-breathe 3.4s ease-in-out infinite;
+}
+
+/* One-shot pop for a freshly counted-up number (re-keyed to replay). */
+@keyframes count-pop {
+  0% {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.count-pop {
+  animation: count-pop 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* Slow vertical bob for small emblems / trophies. */
+@keyframes bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2.5px);
+  }
+}
+.bob {
+  animation: bob 3.2s ease-in-out infinite;
+}
+
+/* Hero panel: constant breathing accent glow so the whole card feels alive
+   (always playing, not on hover). */
+@keyframes hero-pulse {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 1px 0 rgb(var(--color-accent) / 0.06),
+      0 0 0 1px rgb(var(--color-accent) / 0.1),
+      0 0 30px -10px rgb(var(--color-accent) / 0.25);
+  }
+  50% {
+    box-shadow:
+      inset 0 1px 0 rgb(var(--color-accent) / 0.12),
+      0 0 0 1px rgb(var(--color-accent) / 0.24),
+      0 0 48px -6px rgb(var(--color-accent) / 0.5);
+  }
+}
+.hero-pulse {
+  animation: hero-pulse 4.2s ease-in-out infinite;
+}
+
+/* Animated gradient sweep for accent numerals (login "100%"). */
+@keyframes text-shimmer {
+  to {
+    background-position: 200% center;
+  }
+}
+.text-shimmer {
+  background-image: linear-gradient(
+    100deg,
+    rgb(var(--color-accent)) 0%,
+    #e8b84b 25%,
+    #ffffff 50%,
+    #e8b84b 75%,
+    rgb(var(--color-accent)) 100%
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  animation: text-shimmer 4.5s linear infinite;
+}
+
+/* Login CTA: slow travelling sheen so the primary action keeps drawing the eye. */
+@keyframes cta-sheen {
+  0% {
+    transform: translateX(-120%);
+  }
+  60%,
+  100% {
+    transform: translateX(220%);
+  }
+}
+.cta-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    rgb(var(--color-accent) / 0.28) 50%,
+    transparent 70%
+  );
+  transform: translateX(-120%);
+  animation: cta-sheen 4.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Soft up-drift for ambient login particles. */
+@keyframes drift-up {
+  0% {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  15%,
+  85% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(-120px);
+    opacity: 0;
+  }
+}
+
+/* «Черв'як»: світна ділянка, що повзе по периметру рамки. pathLength=100
+   нормалізує довжину, тож dash працює однаково за будь-якого розміру картки. */
+@keyframes worm-crawl {
+  to {
+    stroke-dashoffset: -100;
+  }
+}
+.worm {
+  stroke: rgb(var(--color-accent));
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 12 88;
+  filter: drop-shadow(0 0 5px rgb(var(--color-accent) / 0.9));
+  animation: worm-crawl 5.5s linear infinite;
+}
+/* Тьмяний «хвіст», що повзе слідом для відчуття тіла черв'яка. */
+.worm-tail {
+  stroke: rgb(var(--color-accent) / 0.35);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 20 80;
+  animation: worm-crawl 5.5s linear infinite;
+  animation-delay: -0.35s;
 }

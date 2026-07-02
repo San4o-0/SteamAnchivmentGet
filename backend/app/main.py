@@ -6,7 +6,17 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
 from .db import init_db
-from .routers import agent, auth, game, library, me
+from .routers import (
+    agent,
+    auth,
+    game,
+    leaderboard,
+    library,
+    me,
+    notifications,
+    settings as settings_router,
+    stats,
+)
 
 
 @asynccontextmanager
@@ -37,6 +47,10 @@ def create_app() -> FastAPI:
     app.include_router(library.router)
     app.include_router(game.router)
     app.include_router(agent.router)
+    app.include_router(stats.router)
+    app.include_router(settings_router.router)
+    app.include_router(leaderboard.router)
+    app.include_router(notifications.router)
 
     @app.get("/health", tags=["health"])
     async def health():

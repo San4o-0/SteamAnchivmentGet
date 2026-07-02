@@ -1,6 +1,21 @@
+import type { CSSProperties } from "react";
 import { useUnlock } from "@/api/hooks";
 import { cn } from "@/lib/format";
+import { useT } from "@/lib/i18n";
 import { Spinner } from "./Spinner";
+
+// Loot sparks for the unlock burst: 8 pre-computed flight vectors fanning
+// out of the button center, alternating gold / epic-violet, staggered.
+const SPARKS = Array.from({ length: 8 }, (_, i) => {
+  const angle = (i / 8) * Math.PI * 2 - Math.PI / 2 + 0.35;
+  const dist = i % 2 === 0 ? 34 : 24;
+  return {
+    x: Math.round(Math.cos(angle) * dist),
+    y: Math.round(Math.sin(angle) * dist),
+    delay: 40 + i * 25,
+    gold: i % 2 === 0,
+  };
+});
 
 interface Props {
   appId: number;
@@ -23,6 +38,7 @@ export function UnlockButton({
   className,
   onDone,
 }: Props) {
+  const t = useT();
   const mutation = useUnlock(appId);
 
   const sizing =
@@ -51,16 +67,35 @@ export function UnlockButton({
     "inline-flex items-center justify-center gap-2 rounded-lg font-mono font-semibold uppercase tracking-wider transition-all duration-150 disabled:cursor-not-allowed";
 
   if (isDone) {
+    // Loot drop landed: pop the pill, flare a violet→gold ring (::after in
+    // index.css) and scatter sparks. Purely decorative — overflow stays
+    // visible, sparks are pointer-events-none and fade to opacity 0.
     return (
-      <span
-        className={cn(
-          base,
-          sizing,
-          "border border-done/40 bg-done/15 text-done",
-          className,
-        )}
-      >
-        <CheckIcon /> Done
+      <span className={cn("unlock-burst inline-flex", className)}>
+        <span
+          className={cn(
+            base,
+            sizing,
+            "unlock-pop border border-done/40 bg-done/15 text-done",
+          )}
+        >
+          <CheckIcon /> Done
+        </span>
+        <span aria-hidden className="pointer-events-none absolute inset-0">
+          {SPARKS.map((s, i) => (
+            <span
+              key={i}
+              className={cn("spark", s.gold ? "bg-gold" : "bg-accent")}
+              style={
+                {
+                  "--sx": `${s.x}px`,
+                  "--sy": `${s.y}px`,
+                  animationDelay: `${s.delay}ms`,
+                } as CSSProperties
+              }
+            />
+          ))}
+        </span>
       </span>
     );
   }
@@ -82,7 +117,7 @@ export function UnlockButton({
           sizing,
           isError
             ? "border border-danger/50 bg-danger/10 text-danger hover:bg-danger/20"
-            : "border border-accent/50 bg-accent/15 text-accent hover:border-accent hover:bg-accent/25 active:translate-y-px",
+            : "border border-accent/60 bg-accent/20 text-accent hover:border-accent hover:bg-accent/30 hover:shadow-glow active:translate-y-px",
         )}
       >
         {mutation.isPending ? (
@@ -91,7 +126,7 @@ export function UnlockButton({
           </>
         ) : isError ? (
           <>
-            <RetryIcon /> Повторити
+            <RetryIcon /> {t("unlock.retry")}
           </>
         ) : (
           <>
@@ -103,7 +138,7 @@ export function UnlockButton({
         <span className="max-w-[16rem] text-right text-[0.68rem] leading-tight text-danger/90">
           {partialFail
             ? mutation.data?.error
-            : "Агент не відповів. Спробуйте ще раз."}
+            : t("unlock.noResponse")}
         </span>
       )}
     </div>

@@ -1,12 +1,13 @@
 """Pydantic-схеми відповіді API. Точно за SHARED CONTRACT.
 
-Ach = { id, name, desc, icon, unlocked, globalPercent, rarityTier:"common|rare|ultra" }
+Ach = { id, name, desc, icon, unlocked, globalPercent,
+        rarityTier:"common|uncommon|rare|epic|legendary|mythic" }
 """
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-RarityTier = Literal["common", "rare", "ultra"]
+RarityTier = Literal["common", "uncommon", "rare", "epic", "legendary", "mythic"]
 RoadmapGroup = Literal["start", "mid", "end"]
 
 
@@ -102,3 +103,104 @@ class UnlockResultItem(CamelModel):
 class UnlockResponse(CamelModel):
     ok: bool
     results: list[UnlockResultItem]
+
+
+# --- GET /api/stats ---
+class StatsTotals(CamelModel):
+    games: int
+    achievements: int
+    perfect_games: int = Field(alias="perfectGames")
+    avg_completion: float = Field(alias="avgCompletion")
+    rarity_score: float = Field(alias="rarityScore")
+
+
+class RarityCounts(CamelModel):
+    common: int
+    uncommon: int
+    rare: int
+    epic: int
+    legendary: int
+    mythic: int
+
+
+class CompletionBucket(CamelModel):
+    label: str
+    count: int
+
+
+class TopRareUnlock(CamelModel):
+    game_name: str = Field(alias="gameName")
+    app_id: int = Field(alias="appId")
+    ach: Ach
+
+
+class TopGame(CamelModel):
+    app_id: int = Field(alias="appId")
+    name: str
+    cover: str
+    completion: float
+    ach_done: int = Field(alias="achDone")
+    ach_total: int = Field(alias="achTotal")
+
+
+class Stats(CamelModel):
+    totals: StatsTotals
+    rarity: RarityCounts
+    completion_buckets: list[CompletionBucket] = Field(alias="completionBuckets")
+    top_rare_unlocks: list[TopRareUnlock] = Field(alias="topRareUnlocks")
+    top_games: list[TopGame] = Field(alias="topGames")
+
+
+# --- GET /api/player/{steamId} ---
+class PlayerProfile(CamelModel):
+    steam_id: str = Field(alias="steamId")
+    name: str
+    avatar: str
+    stats: Stats
+
+
+# --- /api/settings ---
+class UserSettings(CamelModel):
+    agent_url: str = Field("http://127.0.0.1:57343", alias="agentUrl")
+    language: Literal["uk", "en"] = "uk"
+    theme: Literal["dark", "light"] = "dark"
+    accent: Literal["violet", "blue", "green", "gold", "magenta"] = "violet"
+    background: Literal["cosmos", "aurora", "rain", "grid", "fireflies", "off"] = "cosmos"
+    private_profile: bool = Field(False, alias="privateProfile")
+    auto_roadmap: bool = Field(True, alias="autoRoadmap")
+
+
+# --- GET /api/leaderboard ---
+class LeaderboardEntry(CamelModel):
+    rank: int
+    steam_id: str = Field(alias="steamId")
+    name: str
+    avatar: str
+    rarity_score: float = Field(alias="rarityScore")
+    achievements: int
+    perfect_games: int = Field(alias="perfectGames")
+    is_me: bool = Field(alias="isMe")
+
+
+# --- /api/notifications ---
+NotificationType = Literal["unlock", "rare", "roadmap", "system", "almost", "milestone"]
+
+
+class Notification(CamelModel):
+    id: str
+    type: NotificationType
+    title: str
+    body: str
+    game_name: str | None = Field(default=None, alias="gameName")
+    app_id: int | None = Field(default=None, alias="appId")
+    read: bool = False
+    created_at: str = Field(alias="createdAt")
+
+
+class MarkReadRequest(CamelModel):
+    ids: list[str] | None = None
+
+
+class MarkReadResponse(CamelModel):
+    ok: bool
+    unread: int

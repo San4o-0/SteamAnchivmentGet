@@ -2,9 +2,22 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { STEAM_LOGIN_URL, api, ApiError } from "@/api/client";
 import { setToken } from "@/lib/auth";
+import { useT } from "@/lib/i18n";
+import { stagger } from "@/lib/motion";
 import type { TokenResponse } from "@/api/types";
 
+// Дрібні частинки, що повільно спливають угору — «жива» атмосфера позаду тексту.
+const PARTICLES = [
+  { left: "12%", delay: "0s", dur: "7s", size: 3 },
+  { left: "27%", delay: "2.4s", dur: "9s", size: 2 },
+  { left: "44%", delay: "4.1s", dur: "8s", size: 4 },
+  { left: "63%", delay: "1.2s", dur: "10s", size: 2 },
+  { left: "78%", delay: "3.6s", dur: "7.5s", size: 3 },
+  { left: "90%", delay: "5s", dur: "9.5s", size: 2 },
+];
+
 export function LoginPage() {
+  const t = useT();
   const navigate = useNavigate();
   const [profile, setProfile] = useState("");
   const [loading, setLoading] = useState(false);
@@ -22,11 +35,7 @@ export function LoginPage() {
       setToken(res.token);
       navigate("/dashboard", { replace: true });
     } catch (err) {
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : "Не вдалося увійти. Спробуй ще раз.",
-      );
+      setError(err instanceof ApiError ? err.message : t("login.error"));
     } finally {
       setLoading(false);
     }
@@ -34,77 +43,141 @@ export function LoginPage() {
 
   return (
     <div className="relative flex min-h-full items-center justify-center overflow-hidden px-6 py-16">
-      <div className="pointer-events-none absolute left-1/2 top-0 h-[420px] w-[420px] -translate-x-1/2 rounded-full bg-gold/10 blur-[120px]" />
+      {/* Ambient aurora — дрейфує й «дихає». */}
+      <div className="float-blob pointer-events-none absolute left-1/2 top-0 h-[440px] w-[440px] -translate-x-1/2 rounded-full bg-accent/15 blur-[120px]" />
+      <div className="float-blob-alt pointer-events-none absolute bottom-0 left-1/2 h-[320px] w-[520px] -translate-x-1/2 rounded-full bg-gold/8 blur-[130px]" />
 
-      <div className="relative w-full max-w-xl text-center">
-        <div className="mb-8 inline-grid h-16 w-16 place-items-center rounded-2xl bg-gold/12 text-3xl text-gold shadow-gold glow-gold">
-          ★
+      {/* Частинки, що спливають. */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+        {PARTICLES.map((p, i) => (
+          <span
+            key={i}
+            className="absolute bottom-1/3 rounded-full bg-accent/70 shadow-glow"
+            style={{
+              left: p.left,
+              width: p.size,
+              height: p.size,
+              animation: `drift-up ${p.dur} ease-in-out ${p.delay} infinite`,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Напівпрозора фіолетова картка: контент у рамці, але фон просвічує. */}
+      <div className="hero-pulse relative isolate w-full max-w-xl rounded-3xl border border-accent/20 bg-surface/30 px-8 py-12 text-center backdrop-blur-md sm:px-12">
+        {/* М'яке фіолетове свічення згори всередині рамки. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -z-10 rounded-3xl bg-[radial-gradient(ellipse_at_50%_-10%,rgb(var(--color-accent)/0.16),transparent_60%)]"
+        />
+
+        {/* «Черв'як», що повзе по рамці. */}
+        <svg
+          aria-hidden
+          className="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
+          preserveAspectRatio="none"
+        >
+          <rect
+            className="worm-tail"
+            x={2}
+            y={2}
+            rx={24}
+            ry={24}
+            pathLength={100}
+            fill="none"
+            style={{ width: "calc(100% - 4px)", height: "calc(100% - 4px)" }}
+          />
+          <rect
+            className="worm"
+            x={2}
+            y={2}
+            rx={24}
+            ry={24}
+            pathLength={100}
+            fill="none"
+            style={{ width: "calc(100% - 4px)", height: "calc(100% - 4px)" }}
+          />
+        </svg>
+
+        <div
+          className="animate-rise bob mb-8 inline-grid h-16 w-16 place-items-center rounded-2xl border border-accent/50 bg-accent/12 text-3xl text-accent shadow-glow glow-gold"
+          style={stagger(0, 90)}
+        >
+          ◆
         </div>
 
-        <div className="eyebrow mb-4">Steam achievement manager</div>
+        <div className="animate-rise eyebrow mb-4" style={stagger(1, 90)}>
+          {t("login.eyebrow")}
+        </div>
 
-        <h1 className="font-display text-5xl font-bold leading-[1.05] sm:text-6xl">
-          Дійди до{" "}
-          <span className="bg-gradient-to-r from-accent to-gold bg-clip-text text-transparent">
-            100%
-          </span>
+        <h1
+          className="animate-rise font-display text-5xl font-bold leading-[1.03] tracking-tight text-ink [text-shadow:0_2px_24px_rgba(0,0,0,0.7)] sm:text-6xl"
+          style={stagger(2, 90)}
+        >
+          {t("login.headline.pre")} <span className="text-shimmer">100%</span>
           <br />
-          швидше.
+          {t("login.headline.post")}
         </h1>
 
-        <p className="mx-auto mt-5 max-w-md text-muted">
-          Побач, що лишилось у кожній грі, вилови найрідкісніші ачивки й пройди
-          продуманим маршрутом — від легкого старту до фінального ривка.
+        <p
+          className="animate-rise mx-auto mt-5 max-w-md text-ink/75 [text-shadow:0_1px_10px_rgba(0,0,0,0.6)]"
+          style={stagger(3, 90)}
+        >
+          {t("login.subtitle")}
         </p>
 
         <a
           href={STEAM_LOGIN_URL}
-          className="group mt-9 inline-flex items-center gap-3 rounded-xl border border-accent/50 bg-accent/15 px-6 py-3.5 font-display text-base font-semibold tracking-wide text-accent transition-all hover:border-accent hover:bg-accent/25 active:translate-y-px"
+          className="cta-sheen animate-rise group relative mt-9 inline-flex items-center gap-3 overflow-hidden rounded-xl border border-accent/60 bg-accent/20 px-6 py-3.5 font-display text-base font-semibold tracking-wide text-white shadow-glow transition-all hover:border-accent hover:bg-accent/30 hover:shadow-[0_0_0_1px_rgb(var(--color-accent)/0.6),0_0_30px_-4px_rgb(var(--color-accent)/0.85)] active:translate-y-px"
+          style={stagger(4, 90)}
         >
           <SteamIcon />
-          Увійти через Steam
-          <span className="transition-transform group-hover:translate-x-0.5">→</span>
+          {t("login.steamButton")}
+          <span className="transition-transform group-hover:translate-x-1">→</span>
         </a>
 
-        <p className="mt-6 font-mono text-[0.68rem] uppercase tracking-widest text-muted/70">
-          Пароль вводиться на офіційному сайті Steam — ми його не бачимо
+        <p
+          className="animate-rise mt-6 font-mono text-[0.68rem] uppercase tracking-widest text-muted"
+          style={stagger(5, 90)}
+        >
+          {t("login.passwordNote")}
         </p>
 
-        <div className="mx-auto mt-10 max-w-md">
-          <div className="mb-4 flex items-center gap-3 text-muted/60">
-            <span className="h-px flex-1 bg-white/10" />
+        <div className="animate-rise mx-auto mt-10 max-w-md" style={stagger(6, 90)}>
+          <div className="mb-4 flex items-center gap-3 text-muted/70">
+            <span className="h-px flex-1 bg-gradient-to-r from-transparent to-line" />
             <span className="font-mono text-[0.68rem] uppercase tracking-widest">
-              або без входу
+              {t("login.divider")}
             </span>
-            <span className="h-px flex-1 bg-white/10" />
+            <span className="h-px flex-1 bg-gradient-to-l from-transparent to-line" />
           </div>
 
-          <form onSubmit={onManualLogin} className="text-left">
-            <label className="mb-2 block text-sm text-muted">
-              Встав посилання на профіль Steam
+          <form
+            onSubmit={onManualLogin}
+            className="rounded-2xl border border-line/70 bg-surface/50 p-4 text-left backdrop-blur-sm"
+          >
+            <label className="mb-2 block text-sm text-ink/80">
+              {t("login.profileLabel")}
             </label>
             <div className="flex gap-2">
               <input
                 value={profile}
                 onChange={(e) => setProfile(e.target.value)}
-                placeholder="steamcommunity.com/id/твій_нік"
+                placeholder={t("login.profilePlaceholder")}
                 autoComplete="off"
                 spellCheck={false}
-                className="min-w-0 flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm outline-none transition-colors placeholder:text-muted/50 focus:border-accent/60"
+                className="min-w-0 flex-1 rounded-xl border border-line bg-raised/60 px-4 py-3 text-sm text-ink outline-none transition-colors placeholder:text-muted/50 focus:border-accent/60 focus:shadow-glow"
               />
               <button
                 type="submit"
                 disabled={loading || !profile.trim()}
-                className="shrink-0 rounded-xl border border-accent/50 bg-accent/15 px-5 py-3 font-display text-sm font-semibold text-accent transition-all hover:border-accent hover:bg-accent/25 disabled:cursor-not-allowed disabled:opacity-40"
+                className="shrink-0 rounded-xl border border-accent/50 bg-accent/20 px-5 py-3 font-display text-sm font-semibold text-white transition-all hover:border-accent hover:bg-accent/30 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                {loading ? "…" : "Переглянути"}
+                {loading ? "…" : t("login.viewButton")}
               </button>
             </div>
             {error && <p className="mt-2 text-sm text-rare">{error}</p>}
-            <p className="mt-2 text-xs text-muted/60">
-              Профіль має бути публічним (Game details = Public). Так ти лише
-              переглядаєш дані — без входу й пароля.
-            </p>
+            <p className="mt-2 text-xs text-muted">{t("login.profileHint")}</p>
           </form>
         </div>
       </div>

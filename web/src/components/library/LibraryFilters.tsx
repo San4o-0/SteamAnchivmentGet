@@ -1,12 +1,13 @@
 import { cn } from "@/lib/format";
+import { useT } from "@/lib/i18n";
 
-export type FilterId = "all" | "unfinished" | "under10h" | "easiest";
+export type FilterId = "all" | "unfinished" | "completed" | "under10h";
 
-export const FILTERS: { id: FilterId; label: string }[] = [
-  { id: "all", label: "Усі" },
-  { id: "unfinished", label: "Тільки незавершені" },
-  { id: "under10h", label: "До 10 годин" },
-  { id: "easiest", label: "Найпростіші до 100%" },
+export const FILTERS: { id: FilterId; labelKey: string }[] = [
+  { id: "all", labelKey: "lib.filterAll" },
+  { id: "unfinished", labelKey: "lib.filterUnfinished" },
+  { id: "completed", labelKey: "lib.filterCompleted" },
+  { id: "under10h", labelKey: "lib.filterUnder10h" },
 ];
 
 interface Props {
@@ -16,8 +17,9 @@ interface Props {
 }
 
 export function LibraryFilters({ active, onChange, counts }: Props) {
+  const t = useT();
   return (
-    <div className="flex flex-wrap gap-2" role="tablist" aria-label="Фільтри бібліотеки">
+    <div className="flex flex-wrap gap-2" role="tablist" aria-label={t("lib.filtersLabel")}>
       {FILTERS.map((f) => {
         const isActive = active === f.id;
         return (
@@ -27,17 +29,17 @@ export function LibraryFilters({ active, onChange, counts }: Props) {
             aria-selected={isActive}
             onClick={() => onChange(f.id)}
             className={cn(
-              "flex items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-medium transition-colors",
+              "flex items-center gap-2 rounded-md border px-3.5 py-2 font-mono text-[0.72rem] uppercase tracking-[0.12em] transition-all",
               isActive
-                ? "border-accent/60 bg-accent/15 text-accent"
-                : "border-line/70 bg-surface/50 text-muted hover:border-line hover:text-ink",
+                ? "border-accent bg-accent text-base shadow-glow"
+                : "border-line/70 bg-surface/50 text-muted hover:border-accent/40 hover:text-ink",
             )}
           >
-            {f.label}
+            {t(f.labelKey)}
             <span
               className={cn(
-                "rounded font-mono text-[0.65rem] tabular-nums",
-                isActive ? "text-accent/80" : "text-muted/70",
+                "rounded text-[0.66rem] tabular-nums",
+                isActive ? "text-base/70" : "text-muted/60",
               )}
             >
               {counts[f.id]}

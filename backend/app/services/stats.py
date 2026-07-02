@@ -61,7 +61,7 @@ def profile_rarity_score(unlocked_percents: list[float]) -> float:
         return 0.0
     contributions = [(100.0 - min(100.0, max(0.0, p))) for p in unlocked_percents]
     raw = sum(contributions) / len(contributions)  # 0..100 середній внесок
-    # Легкий буст за кількість рідкісних (щоб профіль з багатьма ultra цінувався):
-    ultra = sum(1 for p in unlocked_percents if p < 5.0)
-    bonus = min(15.0, ultra * 0.5)
+    # Легкий буст за кількість рідкісних (щоб профіль з багатьма legendary/mythic цінувався):
+    top_drops = sum(1 for p in unlocked_percents if p < 5.0)
+    bonus = min(15.0, top_drops * 0.5)
     return round(min(100.0, raw + bonus), 1)

@@ -1,11 +1,16 @@
 import { http, HttpResponse, delay } from "msw";
-import type { UnlockResponse } from "@/api/types";
+import type { Settings, UnlockResponse } from "@/api/types";
 import {
   buildGame,
   buildLibrary,
   buildRoadmap,
+  buildStats,
+  leaderboard,
   me,
+  notifications,
+  settings,
   unlockedIds,
+  updateSettings,
 } from "./data";
 
 // Ті самі шляхи, що й у реального бекенду (Потік 1) — SHARED CONTRACT.
@@ -65,5 +70,46 @@ export const handlers = [
   http.get("*/api/agent/health", async () => {
     await delay(120);
     return HttpResponse.json({ steamRunning: true, version: "1.4.0" });
+  }),
+
+  http.get("*/api/stats", async () => {
+    await delay(200);
+    return HttpResponse.json(buildStats());
+  }),
+
+  http.get("*/api/settings", async () => {
+    await delay(120);
+    return HttpResponse.json(settings);
+  }),
+
+  // PUT зливає тіло з поточними налаштуваннями й повертає збережене.
+  http.put("*/api/settings", async ({ request }) => {
+    await delay(200);
+    const body = (await request.json()) as Partial<Settings>;
+    return HttpResponse.json(updateSettings(body ?? {}));
+  }),
+
+  http.get("*/api/leaderboard", async () => {
+    await delay(200);
+    return HttpResponse.json(leaderboard);
+  }),
+
+  http.get("*/api/notifications", async () => {
+    await delay(160);
+    return HttpResponse.json(notifications);
+  }),
+
+  // Без ids — позначаємо всі; повертаємо кількість непрочитаних.
+  http.post("*/api/notifications/read", async ({ request }) => {
+    await delay(150);
+    const body = (await request.json().catch(() => ({}))) as {
+      ids?: string[];
+    };
+    const ids = body?.ids;
+    for (const n of notifications) {
+      if (!ids || ids.includes(n.id)) n.read = true;
+    }
+    const unread = notifications.filter((n) => !n.read).length;
+    return HttpResponse.json({ ok: true, unread });
   }),
 ];

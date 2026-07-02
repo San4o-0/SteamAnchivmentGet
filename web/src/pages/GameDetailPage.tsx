@@ -1,24 +1,44 @@
+import { useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useGame } from "@/api/hooks";
 import { AchievementRow } from "@/components/game/AchievementRow";
+import {
+  ACH_SORTS,
+  AchievementSort,
+  type AchSortId,
+} from "@/components/game/AchievementSort";
 import { DifficultyStars } from "@/components/ui/DifficultyStars";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { PageLoader } from "@/components/ui/Spinner";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { BackLink } from "@/components/ui/BackLink";
 import { formatPercent } from "@/lib/format";
+import { stagger, useCountUp } from "@/lib/motion";
+import { useT } from "@/lib/i18n";
 
 export function GameDetailPage() {
+  const t = useT();
   const { appId } = useParams();
   const id = Number(appId);
   const { data, isLoading, isError, refetch } = useGame(id);
 
-  if (isLoading) return <PageLoader label="Завантаження гри" />;
+  // Великий % «набігає» до значення (хук — до ранніх return-ів).
+  const completionCount = useCountUp(data?.completion ?? 0);
+
+  // Сортування списку ачивок (хук — до ранніх return-ів).
+  const [achSort, setAchSort] = useState<AchSortId>("default");
+  const sortedAchievements = useMemo(() => {
+    const list = data?.achievements ?? [];
+    const cmp = ACH_SORTS.find((s) => s.id === achSort)?.cmp;
+    return cmp ? [...list].sort(cmp) : list;
+  }, [data?.achievements, achSort]);
+
+  if (isLoading) return <PageLoader label={t("game.loadingGame")} />;
   if (isError || !data)
     return (
       <div className="space-y-4">
-        <BackLink to="/library" label="До бібліотеки" />
-        <ErrorState title="Гру не знайдено" onRetry={() => refetch()} />
+        <BackLink to="/library" label={t("game.library")} />
+        <ErrorState title={t("game.notFound")} onRetry={() => refetch()} />
       </div>
     );
 
@@ -26,64 +46,97 @@ export function GameDetailPage() {
   const total = data.achievements.length;
   const remaining = total - done;
 
-  const ultraLocked = data.achievements.filter(
-    (a) => !a.unlocked && a.rarityTier === "ultra",
+  // Топ-дропи: заблоковані ачивки верхніх тірів (legendary + mythic).
+  const topDropsLocked = data.achievements.filter(
+    (a) =>
+      !a.unlocked &&
+      (a.rarityTier === "legendary" || a.rarityTier === "mythic"),
   ).length;
 
   return (
     <div className="animate-rise space-y-6">
-      <BackLink to="/library" label="До бібліотеки" />
+      <BackLink to="/library" label={t("game.library")} />
 
-      <header className="panel flex flex-col gap-5 p-6 sm:flex-row sm:items-center">
-        <div className="flex-1">
-          <div className="eyebrow">App {data.appId}</div>
-          <h1 className="mt-1 font-display text-3xl font-bold">{data.name}</h1>
+      {/* HUD command header: game title + rarity readouts + primary loot action. */}
+      <header className="panel relative overflow-hidden p-6 sm:p-7">
+        <div className="pointer-events-none absolute inset-0 bg-grid-fade" aria-hidden />
+        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+          <div className="min-w-0 flex-1">
+            <div className="eyebrow">App {data.appId}</div>
+            <h1 className="mt-1.5 font-display text-4xl font-bold leading-tight tracking-tight text-ink">
+              {data.name}
+            </h1>
 
-          <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted">
-            <span className="flex items-center gap-2">
-              Складність <DifficultyStars value={data.difficulty} />
-            </span>
-            <span className="font-mono">
-              До 100%: <span className="text-ink">≈ {data.estHoursTo100} год</span>
-            </span>
-          </div>
-
-          <div className="mt-4 max-w-md">
-            <div className="mb-1.5 flex items-center justify-between font-mono text-xs">
-              <span className="text-muted">
-                {done}/{total} ачивок
-              </span>
-              <span className="tabular-nums text-accent">
-                {formatPercent(data.completion)}
+            {/* HUD meta row: glowing completion readout · difficulty pips · ETA. */}
+            <div className="mt-5 flex flex-wrap items-center gap-x-8 gap-y-4">
+              <div className="flex items-baseline gap-2.5">
+                <span className="font-display text-4xl font-bold leading-none tabular-nums text-accent [text-shadow:0_0_20px_rgba(139,92,246,0.65)]">
+                  {formatPercent(completionCount)}
+                </span>
+                <span className="eyebrow">{t("game.completed")}</span>
+              </div>
+              <span className="hidden h-8 w-px bg-line sm:block" aria-hidden />
+              <div className="flex items-center gap-2.5">
+                <span className="eyebrow">{t("game.difficulty")}</span>
+                <DifficultyStars value={data.difficulty} />
+              </div>
+              <span className="hidden h-8 w-px bg-line sm:block" aria-hidden />
+              <span className="font-mono text-sm text-muted">
+                ≈ <span className="text-ink">{data.estHoursTo100} {t("game.hours")}</span> {t("game.to100")}
               </span>
             </div>
-            <ProgressBar value={data.completion} />
-          </div>
-        </div>
 
-        <Link
-          to={`/game/${data.appId}/roadmap`}
-          className="group inline-flex items-center gap-2 self-start rounded-xl border border-gold/50 bg-gold/10 px-5 py-3 font-display font-semibold text-gold shadow-gold transition-all hover:bg-gold/20 sm:self-center"
-        >
-          Відкрити маршрут
-          <span className="transition-transform group-hover:translate-x-0.5">→</span>
-        </Link>
+            <div className="mt-5 max-w-md">
+              <div className="mb-1.5 flex items-center justify-between font-mono text-xs">
+                <span className="text-muted">
+                  {done}/{total} {t("game.achievementsCollected")}
+                </span>
+                <span className="tabular-nums text-muted">
+                  {t("game.remaining")} {remaining}
+                </span>
+              </div>
+              <ProgressBar value={data.completion} />
+            </div>
+          </div>
+
+          {/* Primary epic-violet loot action. */}
+          <Link
+            to={`/game/${data.appId}/roadmap`}
+            className="group inline-flex items-center justify-center gap-2.5 self-start rounded-lg border border-accent/60 bg-accent/15 px-6 py-3.5 font-display text-base font-semibold text-white shadow-glow transition-all duration-200 hover:border-accent hover:bg-accent/25 hover:shadow-[0_0_0_1px_rgba(139,92,246,0.55),0_0_28px_-4px_rgba(139,92,246,0.8)] active:translate-y-px lg:self-center"
+          >
+            {t("game.unlockRoute")}
+            <span className="transition-transform group-hover:translate-x-0.5" aria-hidden>
+              →
+            </span>
+          </Link>
+        </div>
       </header>
 
       <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="eyebrow">Ачивки</h2>
-          <div className="flex gap-4 font-mono text-xs text-muted">
-            <span>лишилось: <span className="text-ink">{remaining}</span></span>
-            {ultraLocked > 0 && (
-              <span className="text-gold">ultra: {ultraLocked}</span>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="eyebrow">{t("game.achievementInventory")}</h2>
+          <div className="flex flex-wrap items-center gap-4 font-mono text-xs text-muted">
+            <span>
+              {t("game.remaining")} <span className="text-ink">{remaining}</span>
+            </span>
+            {topDropsLocked > 0 && (
+              <span className="inline-flex items-center gap-1.5 rounded border border-gold/40 bg-gold/10 px-2 py-0.5 uppercase tracking-wider text-gold">
+                <span aria-hidden>✦</span>
+                {t("game.topDrops")} {topDropsLocked}
+              </span>
             )}
+            <AchievementSort value={achSort} onChange={setAchSort} />
           </div>
         </div>
 
         <div className="grid gap-2.5">
-          {data.achievements.map((ach) => (
-            <AchievementRow key={ach.id} appId={data.appId} ach={ach} />
+          {sortedAchievements.map((ach, i) => (
+            <AchievementRow
+              key={ach.id}
+              appId={data.appId}
+              ach={ach}
+              style={stagger(i)}
+            />
           ))}
         </div>
       </section>

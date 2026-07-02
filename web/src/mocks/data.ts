@@ -3,10 +3,14 @@
 import type {
   Ach,
   GameDetail,
+  LeaderboardEntry,
   LibraryEntry,
   Me,
+  Notification,
   Roadmap,
   RarityTier,
+  Settings,
+  Stats,
 } from "@/api/types";
 
 const cover = (appId: number) =>
@@ -14,9 +18,13 @@ const cover = (appId: number) =>
 const achIcon = (seed: string) =>
   `https://api.dicebear.com/7.x/shapes/svg?seed=${seed}&backgroundColor=1b2530`;
 
+// Пороги шести тірів лута за globalPercent (див. RARITY_SPEC).
 function tierFor(globalPercent: number): RarityTier {
-  if (globalPercent < 5) return "ultra";
+  if (globalPercent < 1) return "mythic";
+  if (globalPercent < 5) return "legendary";
+  if (globalPercent < 10) return "epic";
   if (globalPercent < 20) return "rare";
+  if (globalPercent < 50) return "uncommon";
   return "common";
 }
 
@@ -64,15 +72,15 @@ const achievementsByApp: Record<number, Ach[]> = {
     ach("p2_coop", "Разом краще", "Пройти кооп-камеру.", 41.3, true),
     ach("p2_smooth", "Гладка робота", "Пройти главу без смертей.", 12.6, false),
     ach("p2_final", "Прощавай, GLaDOS", "Завершити гру.", 63.4, true),
-    ach("p2_hidden", "Пасхалка", "Знайти прихований куточок.", 4.2, false),
+    ach("p2_hidden", "Пасхалка", "Знайти прихований куточок.", 0.4, true),
   ],
   292030: [
     ach("w3_prologue", "Відьмацькі справи", "Завершити пролог у Білому Саду.", 79.1, true),
-    ach("w3_gwent", "Майстер ґвинта", "Виграти 20 партій.", 18.7, false),
+    ach("w3_gwent", "Майстер ґвинта", "Виграти 20 партій.", 18.7, true),
     ach("w3_geralt", "Шлях відьмака", "Досягти рівня 35.", 24.5, true),
     ach("w3_kaer", "Захисник Каер Морхена", "Пережити облогу.", 33.2, true),
     ach("w3_full", "Повна колекція", "Зібрати всі спорядження школи.", 6.3, false),
-    ach("w3_death", "Народжений вбивати", "Пройти на найвищій складності.", 2.1, false),
+    ach("w3_death", "Народжений вбивати", "Пройти на найвищій складності.", 0.7, false),
   ],
   1245620: [
     ach("er_grace", "Загублена благодать", "Досягти першого місця благодаті.", 82.5, true),
@@ -80,7 +88,7 @@ const achievementsByApp: Record<number, Ach[]> = {
     ach("er_shard", "Господар осколка", "Здобути другий великий осколок.", 29.4, false),
     ach("er_lord", "Повелитель Ельдену", "Завершити гру.", 24.1, false),
     ach("er_all", "Легендарне спорядження", "Зібрати всі легендарні предмети.", 3.4, false),
-    ach("er_malenia", "Мечниця Мікелли", "Перемогти Малєнію.", 4.9, false),
+    ach("er_malenia", "Мечниця Мікелли", "Перемогти Малєнію.", 4.9, true),
   ],
   105600: [
     ach("tr_wood", "Перше дерево", "Зрубати перше дерево.", 95.0, true),
@@ -91,7 +99,7 @@ const achievementsByApp: Record<number, Ach[]> = {
   413150: [
     ach("sv_farm", "Новий фермер", "Прожити перший сезон.", 90.4, true),
     ach("sv_married", "Весілля", "Одружитися.", 44.6, true),
-    ach("sv_master", "Майстер-фермер", "Досягти повного успіху господарства.", 7.7, false),
+    ach("sv_master", "Майстер-фермер", "Досягти повного успіху господарства.", 7.7, true),
   ],
 };
 
@@ -185,3 +193,126 @@ export function buildRoadmap(appId: number): Roadmap | null {
     })),
   };
 }
+
+// --- Feature expansion mocks ---
+
+const avatar = (seed: string) =>
+  `https://api.dicebear.com/7.x/bottts/svg?seed=${seed}`;
+
+// Stats рахуються на льоту з тих самих ачивок — unlock одразу відбивається.
+export function buildStats(): Stats {
+  const lib = buildLibrary();
+  const flat: { appId: number; gameName: string; ach: Ach }[] = [];
+  for (const meta of libraryMeta) {
+    for (const a of withUnlocked(achievementsByApp[meta.appId] ?? [])) {
+      flat.push({ appId: meta.appId, gameName: meta.name, ach: a });
+    }
+  }
+  const unlocked = flat.filter((x) => x.ach.unlocked);
+
+  const rarity = {
+    common: 0,
+    uncommon: 0,
+    rare: 0,
+    epic: 0,
+    legendary: 0,
+    mythic: 0,
+  };
+  for (const x of unlocked) rarity[x.ach.rarityTier] += 1;
+
+  const perfectGames = lib.filter((g) => g.completion === 100).length;
+  const avgCompletion = lib.length
+    ? Math.round(lib.reduce((s, g) => s + g.completion, 0) / lib.length)
+    : 0;
+  const rarityScore = unlocked.reduce(
+    (s, x) => s + Math.round((100 - x.ach.globalPercent) * 10),
+    0,
+  );
+
+  const bucketDefs: { label: string; test: (c: number) => boolean }[] = [
+    { label: "0–25%", test: (c) => c >= 0 && c < 25 },
+    { label: "25–50%", test: (c) => c >= 25 && c < 50 },
+    { label: "50–75%", test: (c) => c >= 50 && c < 75 },
+    { label: "75–99%", test: (c) => c >= 75 && c < 100 },
+    { label: "100%", test: (c) => c === 100 },
+  ];
+  const completionBuckets = bucketDefs.map((b) => ({
+    label: b.label,
+    count: lib.filter((g) => b.test(g.completion)).length,
+  }));
+
+  const topRareUnlocks = [...unlocked]
+    .sort((a, b) => a.ach.globalPercent - b.ach.globalPercent)
+    .slice(0, 6)
+    .map((x) => ({ gameName: x.gameName, appId: x.appId, ach: x.ach }));
+
+  const topGames = [...lib]
+    .sort((a, b) => b.completion - a.completion)
+    .slice(0, 6)
+    .map((g) => ({
+      appId: g.appId,
+      name: g.name,
+      cover: g.cover,
+      completion: g.completion,
+      achDone: g.achDone,
+      achTotal: g.achTotal,
+    }));
+
+  return {
+    totals: {
+      games: lib.length,
+      achievements: unlocked.length,
+      perfectGames,
+      avgCompletion,
+      rarityScore,
+    },
+    rarity,
+    completionBuckets,
+    topRareUnlocks,
+    topGames,
+  };
+}
+
+// Налаштування — мутабельний стан моків (PUT зливає й повертає).
+export let settings: Settings = {
+  agentUrl: "http://127.0.0.1:57343",
+  language: "uk",
+  theme: "dark",
+  accent: "violet",
+  background: "cosmos",
+  privateProfile: false,
+  autoRoadmap: true,
+};
+
+export function updateSettings(patch: Partial<Settings>): Settings {
+  settings = { ...settings, ...patch };
+  return settings;
+}
+
+// Ліга — ранжовано за rarityScore desc, рівно один isMe (поточний користувач).
+export const leaderboard: LeaderboardEntry[] = [
+  { rank: 1, steamId: "76561198000000101", name: "NovaBreaker", avatar: avatar("NovaBreaker"), rarityScore: 12480, achievements: 812, perfectGames: 41, isMe: false },
+  { rank: 2, steamId: "76561198000000102", name: "GhostByte", avatar: avatar("GhostByte"), rarityScore: 10930, achievements: 744, perfectGames: 36, isMe: false },
+  { rank: 3, steamId: "76561198000000103", name: "Vesper", avatar: avatar("Vesper"), rarityScore: 9210, achievements: 690, perfectGames: 29, isMe: false },
+  { rank: 4, steamId: me.steamId, name: me.name, avatar: me.avatar, rarityScore: 7340, achievements: 428, perfectGames: 18, isMe: true },
+  { rank: 5, steamId: "76561198000000105", name: "Katana", avatar: avatar("Katana"), rarityScore: 6980, achievements: 402, perfectGames: 16, isMe: false },
+  { rank: 6, steamId: "76561198000000106", name: "PixelWolf", avatar: avatar("PixelWolf"), rarityScore: 6110, achievements: 377, perfectGames: 14, isMe: false },
+  { rank: 7, steamId: "76561198000000107", name: "Solstice", avatar: avatar("Solstice"), rarityScore: 5240, achievements: 331, perfectGames: 11, isMe: false },
+  { rank: 8, steamId: "76561198000000108", name: "Zenith", avatar: avatar("Zenith"), rarityScore: 4300, achievements: 288, perfectGames: 9, isMe: false },
+  { rank: 9, steamId: "76561198000000109", name: "Frost", avatar: avatar("Frost"), rarityScore: 3120, achievements: 214, perfectGames: 6, isMe: false },
+  { rank: 10, steamId: "76561198000000110", name: "Ember", avatar: avatar("Ember"), rarityScore: 1980, achievements: 156, perfectGames: 3, isMe: false },
+];
+
+// Сповіщення — найновіші першими, частина непрочитаних. Мутабельний масив.
+export const notifications: Notification[] = [
+  { id: "n0", type: "almost", title: "До ачивки один крок", body: "«Ґвент-мастер» — найлегша з решти у The Witcher 3: її мають 22.4% гравців.", gameName: "The Witcher 3", appId: 292030, read: false, createdAt: "2026-07-02T11:05:00Z" },
+  { id: "n1", type: "rare", title: "Легендарний дроп!", body: "«Мечниця Мікелли» — лише 4.9% гравців її мають.", gameName: "Elden Ring", appId: 1245620, read: false, createdAt: "2026-07-02T09:12:00Z" },
+  { id: "n1b", type: "almost", title: "Рідкісний дроп поруч ✦", body: "У Hollow Knight на тебе чекає «Порожнє Серце» — лише 2.1% гравців мають її.", gameName: "Hollow Knight", appId: 367520, read: false, createdAt: "2026-07-02T08:00:00Z" },
+  { id: "n2", type: "unlock", title: "Ачивку розблоковано", body: "«Полеглий Годрік» додано до твоєї колекції.", gameName: "Elden Ring", appId: 1245620, read: false, createdAt: "2026-07-01T18:40:00Z" },
+  { id: "n2b", type: "milestone", title: "Рубіж: 3000+ ачивок 🏆", body: "У колекції вже 3 480 вибитих ачивок. Наступна позначка — 3 500.", read: false, createdAt: "2026-07-01T12:00:00Z" },
+  { id: "n3", type: "roadmap", title: "Новий маршрут готовий", body: "Складено план на 100% для Cyberpunk 2077.", gameName: "Cyberpunk 2077", appId: 1091500, read: false, createdAt: "2026-06-30T14:05:00Z" },
+  { id: "n4", type: "system", title: "Агент оновлено", body: "Локальний агент оновлено до версії 1.4.0.", read: true, createdAt: "2026-06-29T08:00:00Z" },
+  { id: "n5", type: "unlock", title: "Ачивку розблоковано", body: "«Одруження» у Stardew Valley — вітаємо!", gameName: "Stardew Valley", appId: 413150, read: true, createdAt: "2026-06-27T21:15:00Z" },
+  { id: "n6", type: "rare", title: "Рідкісна ачивка", body: "«Майстер ґвинта» — лише 18.7% гравців.", gameName: "The Witcher 3", appId: 292030, read: true, createdAt: "2026-06-25T12:30:00Z" },
+  { id: "n7", type: "system", title: "Ласкаво просимо до Achivo", body: "Підключи агент, щоб розблоковувати ачивки локально.", read: true, createdAt: "2026-06-24T10:00:00Z" },
+];

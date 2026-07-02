@@ -4,8 +4,10 @@ import { Timeline } from "@/components/roadmap/Timeline";
 import { PageLoader } from "@/components/ui/Spinner";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { BackLink } from "@/components/ui/BackLink";
+import { useT } from "@/lib/i18n";
 
 export function RoadmapPage() {
+  const t = useT();
   const { appId } = useParams();
   const id = Number(appId);
   const game = useGame(id);
@@ -15,25 +17,26 @@ export function RoadmapPage() {
 
   return (
     <div className="animate-rise space-y-6">
-      <BackLink to={`/game/${id}`} label={gameName ? `До ${gameName}` : "До гри"} />
+      <BackLink to={`/game/${id}`} label={gameName ? `${t("road.backTo")} ${gameName}` : t("road.backToGame")} />
 
       <header>
-        <div className="eyebrow">Маршрут до 100%</div>
-        <h1 className="mt-1 font-display text-3xl font-bold">
-          {gameName ?? "Маршрут"}
+        <div className="eyebrow text-accent">Quest Line</div>
+        <h1 className="mt-1 font-display text-3xl font-bold tracking-tight text-ink">
+          {t("road.routeTo100")}
         </h1>
-        <p className="mt-1.5 max-w-lg text-sm text-muted">
-          Кроки впорядковані від найлегших до найрідкісніших. Найважча ачивка
-          позначена{" "}
-          <span className="text-gold">★</span>. Тисни Unlock на будь-якому кроці
-          або розблокуй увесь маршрут одразу.
+        <p className="mt-1 font-mono text-sm uppercase tracking-[0.14em] text-muted">
+          {gameName ?? t("road.route")}
+        </p>
+        <p className="mt-3 max-w-lg text-sm text-muted">
+          {t("road.introBefore")}{" "}
+          <span className="text-gold">★</span>{t("road.introAfter")}
         </p>
       </header>
 
       {roadmap.isLoading ? (
-        <PageLoader label="Побудова маршруту" />
+        <PageLoader label={t("road.buildingRoute")} />
       ) : roadmap.isError || !roadmap.data ? (
-        <ErrorState title="Маршрут недоступний" onRetry={() => roadmap.refetch()} />
+        <ErrorState title={t("road.routeUnavailable")} onRetry={() => roadmap.refetch()} />
       ) : (
         <Timeline appId={id} roadmap={roadmap.data} />
       )}

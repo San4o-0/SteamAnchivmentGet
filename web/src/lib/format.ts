@@ -1,24 +1,33 @@
 import type { RarityTier } from "@/api/types";
+import { getLang } from "@/lib/appearance";
 
 export function cn(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(" ");
 }
 
+// Мовно-залежні короткі одиниці. Читаємо мову в момент виклику — компоненти,
+// що споживають i18n-контекст, перемальовуються при зміні мови й перераховують це.
+function units() {
+  return getLang() === "en" ? { h: "h", m: "m" } : { h: "год", m: "хв" };
+}
+
 export function formatHours(hours: number): string {
-  if (hours < 1) return `${Math.round(hours * 60)} хв`;
-  return `${hours} год`;
+  const u = units();
+  if (hours < 1) return `${Math.round(hours * 60)} ${u.m}`;
+  return `${hours} ${u.h}`;
 }
 
 export function formatEta(minutes: number): string {
-  if (minutes < 60) return `${minutes} хв`;
+  const u = units();
+  if (minutes < 60) return `${minutes} ${u.m}`;
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  return m === 0 ? `${h} год` : `${h} год ${m} хв`;
+  return m === 0 ? `${h} ${u.h}` : `${h} ${u.h} ${m} ${u.m}`;
 }
 
 export function formatDate(iso: string): string {
   try {
-    return new Intl.DateTimeFormat("uk-UA", {
+    return new Intl.DateTimeFormat(getLang() === "en" ? "en-US" : "uk-UA", {
       day: "numeric",
       month: "short",
       year: "numeric",
@@ -39,12 +48,18 @@ export function formatGlobalPercent(n: number): string {
 
 export const rarityLabel: Record<RarityTier, string> = {
   common: "Common",
+  uncommon: "Uncommon",
   rare: "Rare",
-  ultra: "Ultra Rare",
+  epic: "Epic",
+  legendary: "Legendary",
+  mythic: "Mythic",
 };
 
 export const rarityColor: Record<RarityTier, string> = {
   common: "text-common",
+  uncommon: "text-uncommon",
   rare: "text-rare",
-  ultra: "text-gold",
+  epic: "text-epic",
+  legendary: "text-gold",
+  mythic: "text-mythic",
 };

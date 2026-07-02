@@ -212,12 +212,12 @@ export function LeaderboardPage() {
 
   return (
     <div className="animate-rise space-y-8">
-      <header>
+      <header className="rounded-xl border border-line/70 bg-surface/40 p-5 backdrop-blur-sm sm:p-6">
         <div className="eyebrow text-accent">{t("leader.eyebrow")}</div>
         <h1 className="font-display text-3xl font-bold tracking-tight">
           {t("leader.title")}
         </h1>
-        <p className="mt-1 max-w-xl text-sm text-muted">
+        <p className="mt-1 text-sm leading-relaxed text-muted">
           {t("leader.subtitle")}
         </p>
       </header>

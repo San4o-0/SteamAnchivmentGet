@@ -68,7 +68,7 @@ export function StatisticsPage() {
   return (
     <div className="animate-rise space-y-8">
       {/* ── Заголовок ────────────────────────────────────────────── */}
-      <header>
+      <header className="rounded-xl border border-line/70 bg-surface/40 p-5 backdrop-blur-sm sm:p-6">
         <div className="eyebrow text-accent">{t("stats.eyebrow")}</div>
         <h1 className="font-display text-3xl font-bold tracking-tight">
           {t("stats.title")}
@@ -328,7 +328,7 @@ export function StatisticsPage() {
                     <h3 className="truncate font-display font-semibold tracking-tight transition-colors group-hover:text-accent">
                       {g.name}
                     </h3>
-                    <span className="shrink-0 font-mono text-base font-medium tabular-nums text-accent">
+                    <span className="shrink-0 font-mono text-[1rem] font-medium tabular-nums text-accent">
                       {formatPercent(g.completion)}
                     </span>
                   </div>

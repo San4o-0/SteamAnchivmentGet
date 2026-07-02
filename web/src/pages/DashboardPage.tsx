@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/ui/ErrorState";
 import { formatPercent, formatHours } from "@/lib/format";
 import { stagger, useCountUp } from "@/lib/motion";
 import { useT } from "@/lib/i18n";
+import { WormLink } from "@/components/ui/WormLink";
 
 export function DashboardPage() {
   const t = useT();
@@ -135,12 +136,12 @@ export function DashboardPage() {
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="eyebrow">{t("dash.topRare")}</h2>
-          <Link
+          <WormLink
             to="/statistics"
-            className="font-mono text-xs uppercase tracking-wider text-accent hover:underline"
+            className="px-3.5 py-1 font-mono text-[0.7rem]"
           >
             {t("dash.allStats")}
-          </Link>
+          </WormLink>
         </div>
 
         {stats.isLoading ? (
@@ -195,12 +196,12 @@ export function DashboardPage() {
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="eyebrow">{t("dash.nextGoals")}</h2>
-          <Link
+          <WormLink
             to="/library"
-            className="font-mono text-xs uppercase tracking-wider text-accent hover:underline"
+            className="px-3.5 py-1 font-mono text-[0.7rem]"
           >
             {t("dash.allLibrary")}
-          </Link>
+          </WormLink>
         </div>
 
         {library.isLoading ? (
@@ -230,7 +231,7 @@ export function DashboardPage() {
                     <h3 className="truncate font-display font-semibold tracking-tight transition-colors group-hover:text-accent">
                       {g.name}
                     </h3>
-                    <span className="shrink-0 font-mono text-base font-semibold tabular-nums text-ink">
+                    <span className="shrink-0 font-mono text-[1rem] font-semibold tabular-nums text-accent">
                       {formatPercent(g.completion)}
                     </span>
                   </div>

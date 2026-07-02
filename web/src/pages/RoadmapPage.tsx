@@ -19,7 +19,7 @@ export function RoadmapPage() {
     <div className="animate-rise space-y-6">
       <BackLink to={`/game/${id}`} label={gameName ? `${t("road.backTo")} ${gameName}` : t("road.backToGame")} />
 
-      <header>
+      <header className="rounded-xl border border-line/70 bg-surface/40 p-5 backdrop-blur-sm sm:p-6">
         <div className="eyebrow text-accent">Quest Line</div>
         <h1 className="mt-1 font-display text-3xl font-bold tracking-tight text-ink">
           {t("road.routeTo100")}
@@ -27,7 +27,7 @@ export function RoadmapPage() {
         <p className="mt-1 font-mono text-sm uppercase tracking-[0.14em] text-muted">
           {gameName ?? t("road.route")}
         </p>
-        <p className="mt-3 max-w-lg text-sm text-muted">
+        <p className="mt-3 text-sm leading-relaxed text-muted">
           {t("road.introBefore")}{" "}
           <span className="text-gold">★</span>{t("road.introAfter")}
         </p>

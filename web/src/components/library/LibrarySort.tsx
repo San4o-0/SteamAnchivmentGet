@@ -1,5 +1,5 @@
 import type { LibraryEntry } from "@/api/types";
-import { cn } from "@/lib/format";
+import { Select } from "@/components/ui/Select";
 import { useT } from "@/lib/i18n";
 
 export type SortId =
@@ -67,35 +67,12 @@ interface Props {
 export function LibrarySort({ value, onChange, className }: Props) {
   const t = useT();
   return (
-    <label className={cn("relative inline-flex items-center", className)}>
-      <span className="sr-only">{t("lib.sortLabel")}</span>
-      <span
-        aria-hidden
-        className="pointer-events-none absolute left-3 font-mono text-[0.62rem] uppercase tracking-[0.14em] text-muted"
-      >
-        {t("lib.sortLabel")}
-      </span>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value as SortId)}
-        className="appearance-none rounded-md border border-line/70 bg-surface/60 py-2 pl-[5.5rem] pr-9 font-mono text-[0.72rem] uppercase tracking-[0.08em] text-ink transition-colors hover:border-accent/40 focus:border-accent/60 focus:shadow-glow focus:outline-none"
-      >
-        {SORTS.map((s) => (
-          <option key={s.id} value={s.id} className="bg-surface text-ink">
-            {t(s.labelKey)}
-          </option>
-        ))}
-      </select>
-      <svg
-        aria-hidden
-        className="pointer-events-none absolute right-3 text-muted"
-        width="14"
-        height="14"
-        viewBox="0 0 24 24"
-        fill="none"
-      >
-        <path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    </label>
+    <Select<SortId>
+      label={t("lib.sortLabel")}
+      value={value}
+      onChange={onChange}
+      options={SORTS.map((s) => ({ id: s.id, label: t(s.labelKey) }))}
+      className={className}
+    />
   );
 }

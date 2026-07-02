@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useGame } from "@/api/hooks";
 import { AchievementRow } from "@/components/game/AchievementRow";
 import {
@@ -12,6 +12,7 @@ import { ProgressBar } from "@/components/ui/ProgressBar";
 import { PageLoader } from "@/components/ui/Spinner";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { BackLink } from "@/components/ui/BackLink";
+import { WormLink } from "@/components/ui/WormLink";
 import { formatPercent } from "@/lib/format";
 import { stagger, useCountUp } from "@/lib/motion";
 import { useT } from "@/lib/i18n";
@@ -99,16 +100,16 @@ export function GameDetailPage() {
             </div>
           </div>
 
-          {/* Primary epic-violet loot action. */}
-          <Link
+          {/* Primary loot action — той самий стиль, що й кнопки з рамкою-черв'яком. */}
+          <WormLink
             to={`/game/${data.appId}/roadmap`}
-            className="group inline-flex items-center justify-center gap-2.5 self-start rounded-lg border border-accent/60 bg-accent/15 px-6 py-3.5 font-display text-base font-semibold text-white shadow-glow transition-all duration-200 hover:border-accent hover:bg-accent/25 hover:shadow-[0_0_0_1px_rgba(139,92,246,0.55),0_0_28px_-4px_rgba(139,92,246,0.8)] active:translate-y-px lg:self-center"
+            className="group self-start px-6 py-3.5 font-display text-[1rem] font-semibold lg:self-center"
           >
             {t("game.unlockRoute")}
             <span className="transition-transform group-hover:translate-x-0.5" aria-hidden>
               →
             </span>
-          </Link>
+          </WormLink>
         </div>
       </header>
 

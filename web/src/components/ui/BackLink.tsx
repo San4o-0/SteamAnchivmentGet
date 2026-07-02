@@ -1,15 +1,17 @@
-import { Link } from "react-router-dom";
+import { WormLink } from "@/components/ui/WormLink";
 
+// Кнопка «назад» у стилі проєкту: та сама квадратна рамка-черв'як, що й решта
+// кнопок-посилань, лише компактніша. Стрілка трохи їде вліво на hover.
 export function BackLink({ to, label }: { to: string; label: string }) {
   return (
-    <Link
+    <WormLink
       to={to}
-      className="group inline-flex items-center gap-1.5 font-mono text-xs font-semibold uppercase tracking-wider text-muted transition-colors hover:text-accent"
+      className="group gap-1.5 px-3 py-1 font-mono text-[0.7rem] font-semibold"
     >
       <span aria-hidden className="transition-transform group-hover:-translate-x-0.5">
         ←
-      </span>{" "}
+      </span>
       {label}
-    </Link>
+    </WormLink>
   );
 }

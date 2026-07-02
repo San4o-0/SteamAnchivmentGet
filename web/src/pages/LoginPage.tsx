@@ -128,7 +128,7 @@ export function LoginPage() {
 
         <a
           href={STEAM_LOGIN_URL}
-          className="cta-sheen animate-rise group relative mt-9 inline-flex items-center gap-3 overflow-hidden rounded-xl border border-accent/60 bg-accent/20 px-6 py-3.5 font-display text-base font-semibold tracking-wide text-white shadow-glow transition-all hover:border-accent hover:bg-accent/30 hover:shadow-[0_0_0_1px_rgb(var(--color-accent)/0.6),0_0_30px_-4px_rgb(var(--color-accent)/0.85)] active:translate-y-px"
+          className="cta-sheen animate-rise group relative mt-9 inline-flex items-center gap-3 overflow-hidden rounded-xl border border-accent/60 bg-accent/20 px-6 py-3.5 font-display text-[1rem] font-semibold tracking-wide text-white shadow-glow transition-all hover:border-accent hover:bg-accent/30 hover:shadow-[0_0_0_1px_rgb(var(--color-accent)/0.6),0_0_30px_-4px_rgb(var(--color-accent)/0.85)] active:translate-y-px"
           style={stagger(4, 90)}
         >
           <SteamIcon />

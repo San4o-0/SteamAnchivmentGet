@@ -144,6 +144,23 @@
   animation: fade-in 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
 }
 
+/* Випадаючий список (кастомний Select): коротка поява згори вниз. */
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dropdown-in {
+  transform-origin: top;
+  animation: dropdown-in 0.14s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
 /* Loot-drop pulse: an epic-violet aura breathing on emblems / prestige items. */
 @keyframes pulse-gold {
   0%,
@@ -1016,4 +1033,55 @@
   stroke-dasharray: 20 80;
   animation: worm-crawl 5.5s linear infinite;
   animation-delay: -0.35s;
+}
+
+/* ─── Worm-link: кнопка-посилання «Уся статистика / Уся бібліотека» ───
+   Квадратна напівпрозора фіолетова (акцентна) рамка, по якій біжить
+   міні-«черв'ячок» — короткий яскравий відрізок, що повзе по периметру.
+   Рамка — SVG у реальних px (без viewBox), тож черв'як рухається рівномірно
+   на всіх сторонах, без спотворення швидкості. Колір — через --color-accent. */
+.worm-link {
+  position: relative;
+  isolation: isolate;
+  transition: background-color 0.2s ease;
+}
+.worm-link:hover {
+  background-color: rgb(var(--color-accent) / 0.08);
+}
+
+.worm-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.worm-svg rect {
+  x: 1px;
+  y: 1px;
+  width: calc(100% - 2px);
+  height: calc(100% - 2px);
+  fill: none;
+  vector-effect: non-scaling-stroke;
+}
+/* Статична напівпрозора рамка. */
+.worm-track {
+  stroke: rgb(var(--color-accent) / 0.55);
+  stroke-width: 1.5;
+}
+/* Яскравий черв'ячок, що біжить по рамці. */
+.worm-crawler {
+  stroke: rgb(var(--color-accent));
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-dasharray: 16 600;
+  filter: drop-shadow(0 0 4px rgb(var(--color-accent) / 0.9));
+  animation: worm-run 2.8s linear infinite;
+}
+@keyframes worm-run {
+  to {
+    /* зсув на повний період (16+600) — безшовний цикл незалежно від розміру */
+    stroke-dashoffset: -616;
+  }
 }

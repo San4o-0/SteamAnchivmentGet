@@ -1,4 +1,4 @@
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { usePlayer } from "@/api/hooks";
 import { StatTile } from "@/components/ui/StatTile";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -89,12 +89,12 @@ export function PlayerPage() {
       {topAch.length > 0 && (
         <section>
           <h2 className="eyebrow mb-3">{t("dash.topRare")}</h2>
+          {/* Чужий профіль — лише перегляд, без переходу на власні сторінки ігор. */}
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {topAch.map((x) => (
-              <Link
+              <div
                 key={`${x.appId}-${x.ach.id}`}
-                to={`/game/${x.appId}`}
-                className="panel panel-hover group flex items-center gap-3.5 p-3.5"
+                className="panel flex items-center gap-3.5 p-3.5"
               >
                 <img
                   src={x.ach.icon}
@@ -102,7 +102,7 @@ export function PlayerPage() {
                   className="h-14 w-14 shrink-0 rounded-lg border border-line bg-raised object-cover"
                 />
                 <div className="min-w-0 flex-1">
-                  <h3 className="truncate font-display text-sm font-semibold tracking-tight transition-colors group-hover:text-accent">
+                  <h3 className="truncate font-display text-sm font-semibold tracking-tight">
                     {x.ach.name}
                   </h3>
                   <div className="mt-0.5 truncate text-xs text-muted">
@@ -116,7 +116,7 @@ export function PlayerPage() {
                     />
                   </div>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         </section>
@@ -128,10 +128,9 @@ export function PlayerPage() {
           <h2 className="eyebrow mb-3">{t("player.topGames")}</h2>
           <div className="grid gap-3 lg:grid-cols-2">
             {topGames.map((g) => (
-              <Link
+              <div
                 key={g.appId}
-                to={`/game/${g.appId}`}
-                className="panel panel-hover group flex items-center gap-4 p-4"
+                className="panel flex items-center gap-4 p-4"
               >
                 <img
                   src={g.cover}
@@ -140,10 +139,10 @@ export function PlayerPage() {
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-3">
-                    <h3 className="truncate font-display font-semibold tracking-tight transition-colors group-hover:text-accent">
+                    <h3 className="truncate font-display font-semibold tracking-tight">
                       {g.name}
                     </h3>
-                    <span className="shrink-0 font-mono text-base font-medium tabular-nums text-accent">
+                    <span className="shrink-0 font-mono text-[1rem] font-medium tabular-nums text-accent">
                       {formatPercent(g.completion)}
                     </span>
                   </div>
@@ -154,7 +153,7 @@ export function PlayerPage() {
                     {g.achDone}/{g.achTotal} {t("dash.achievements")}
                   </div>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         </section>

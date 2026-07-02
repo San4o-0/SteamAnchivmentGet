@@ -60,7 +60,7 @@ export function LibraryPage() {
 
   return (
     <div className="animate-rise space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
+      <header className="flex flex-wrap items-end justify-between gap-4 rounded-xl border border-line/70 bg-surface/40 p-5 backdrop-blur-sm sm:p-6">
         <div>
           <div className="eyebrow">{t("lib.eyebrow")}</div>
           <h1 className="font-display text-3xl font-bold">

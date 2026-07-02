@@ -1,4 +1,4 @@
-import { NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { useMe } from "@/api/hooks";
 import { clearToken } from "@/lib/auth";
@@ -64,21 +64,26 @@ export function Sidebar() {
 
       <div className="mt-auto space-y-2 p-3">
         {me && (
-          <div className="panel flex items-center gap-3 p-3">
+          <Link
+            to="/settings"
+            aria-label={t("nav.settings")}
+            className="panel panel-hover group flex items-center gap-3 p-3"
+          >
             <img
               src={me.avatar}
               alt=""
               className="h-9 w-9 rounded-md border border-accent/30 bg-raised"
             />
             <div className="min-w-0 leading-tight">
-              <div className="truncate text-sm font-semibold text-ink">
+              <div className="truncate text-sm font-semibold text-ink transition-colors group-hover:text-accent">
                 {me.name}
               </div>
               <div className="truncate font-mono text-[0.65rem] text-muted">
                 {me.steamId}
               </div>
             </div>
-          </div>
+            <GearIcon className="ml-auto shrink-0 text-muted transition-colors group-hover:text-accent" />
+          </Link>
         )}
         <button
           type="button"
@@ -145,9 +150,9 @@ function TrophyIcon() {
   );
 }
 
-function GearIcon() {
+function GearIcon({ className }: { className?: string }) {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden className={className}>
       <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.8" />
       <path d="M12 2v3m0 14v3M4.2 4.2l2.1 2.1m11.4 11.4l2.1 2.1M2 12h3m14 0h3M4.2 19.8l2.1-2.1m11.4-11.4l2.1-2.1" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>

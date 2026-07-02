@@ -1,0 +1,108 @@
+# ---------------------------------------------------------------------------
+# .NET / Visual Studio build output
+# ---------------------------------------------------------------------------
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+build/
+bld/
+[Oo]ut/
+[Ll]og/
+[Ll]ogs/
+
+# Build results / binaries
+*.dll
+*.exe
+*.pdb
+*.mdb
+*.cache
+*.o
+*.obj
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+!packages/build/
+.nuget/
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# MSBuild / restore
+*.binlog
+project.assets.json
+*.nuget.dgspec.json
+*.nuget.g.props
+*.nuget.g.targets
+
+# ---------------------------------------------------------------------------
+# Visual Studio / Rider / VS Code
+# ---------------------------------------------------------------------------
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+*_i.c
+*_p.c
+*.ncb
+*.aps
+*.pch
+*.vspscc
+*.vssscc
+
+# ReSharper
+_ReSharper*/
+*.DotSettings.user
+
+# ---------------------------------------------------------------------------
+# Tooling installed locally for building (do not commit)
+# ---------------------------------------------------------------------------
+.dotnet/
+dotnet-install.sh
+
+# ---------------------------------------------------------------------------
+# OS / editor cruft
+# ---------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+
+# ---------------------------------------------------------------------------
+# Secrets / local config (keep out of source control)
+# ---------------------------------------------------------------------------
+*.env
+.env
+.env.local
+appsettings.*.local.json
+secrets.json
+
+# ---------------------------------------------------------------------------
+# Python (backend)
+# ---------------------------------------------------------------------------
+.venv/
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+*.db
+sam.db
+
+# ---------------------------------------------------------------------------
+# Node (web)
+# ---------------------------------------------------------------------------
+node_modules/
+dist/
+*.local

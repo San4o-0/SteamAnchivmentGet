@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-base text-ink font-body antialiased;
+    background-image:
+      radial-gradient(
+        ellipse 80% 50% at 50% -10%,
+        rgba(78, 163, 214, 0.1),
+        transparent 60%
+      ),
+      linear-gradient(rgba(38, 52, 69, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(38, 52, 69, 0.04) 1px, transparent 1px);
+    background-size:
+      100% 100%,
+      44px 44px,
+      44px 44px;
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    @apply bg-accent/30 text-ink;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent/70 ring-offset-2 ring-offset-base;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-line;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-accent-dim;
+  }
+}
+
+@layer components {
+  .eyebrow {
+    @apply font-mono text-[0.68rem] uppercase tracking-[0.28em] text-muted;
+  }
+
+  .panel {
+    @apply rounded-xl border border-line/80 bg-surface/70 backdrop-blur-sm;
+  }
+
+  .panel-hover {
+    @apply transition-colors duration-200 hover:border-accent/50 hover:bg-raised/60;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-rise {
+  animation: rise 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes pulse-gold {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px rgba(232, 184, 75, 0.4), 0 0 16px -4px rgba(232, 184, 75, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 1px rgba(232, 184, 75, 0.7), 0 0 24px -2px rgba(232, 184, 75, 0.8);
+  }
+}
+
+.glow-gold {
+  animation: pulse-gold 2.6s ease-in-out infinite;
+}

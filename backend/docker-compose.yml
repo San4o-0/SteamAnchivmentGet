@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: sam
+      POSTGRES_PASSWORD: sam
+      POSTGRES_DB: sam
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sam"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://sam:sam@db:5432/sam
+      STEAM_API_KEY: ${STEAM_API_KEY}
+      JWT_SECRET: ${JWT_SECRET:-dev-insecure-secret-change-me}
+      BASE_URL: ${BASE_URL:-http://localhost:8000}
+      FRONTEND_RETURN_URL: ${FRONTEND_RETURN_URL:-http://localhost:5173/auth/callback?token={token}}
+      AGENT_URL: ${AGENT_URL:-http://host.docker.internal:57343}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+    ports:
+      - "8000:8000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  pgdata:

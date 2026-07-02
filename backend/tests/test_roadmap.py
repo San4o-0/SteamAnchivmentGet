@@ -153,3 +153,16 @@ def test_profile_rarity_score_range():
     assert rare > common
     assert 0.0 <= common <= 100.0
     assert 0.0 <= rare <= 100.0
+
+
+def test_profile_rarity_score_is_monotonic():
+    """Ключова гарантія: здобуття БУДЬ-ЯКОЇ ачивки не знижує рейтинг.
+
+    Стара формула (середній внесок) падала від масової ачивки — тут перевіряємо,
+    що додавання навіть найпростішої (95%) лише збільшує (чи лишає рівним) рахунок.
+    """
+    base = profile_rarity_score([1.0, 2.0, 30.0])
+    plus_common = profile_rarity_score([1.0, 2.0, 30.0, 95.0])
+    plus_rare = profile_rarity_score([1.0, 2.0, 30.0, 0.5])
+    assert plus_common >= base          # масова ачивка НЕ знижує
+    assert plus_rare > plus_common      # рідкісна додає більше за масову

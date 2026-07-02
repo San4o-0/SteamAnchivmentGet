@@ -4,6 +4,7 @@
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 
 from .roadmap import AchievementInput, estimate_eta_minutes
@@ -50,18 +51,33 @@ def est_hours_to_100(achievements: list[AchievementInput]) -> float:
     return round(minutes / 60.0, 1)
 
 
-def profile_rarity_score(unlocked_percents: list[float]) -> float:
-    """Рейтинг рідкості профілю 0..100.
+# Масштаб кривої насичення. Більший K -> повільніше наближення до 100
+# (ширший діапазон значень); менший -> швидше насичення. Підібрано так, щоб
+# ~50 ачивок середньої рідкості давали ~50, ~200 -> ~94.
+_SATURATION_K = 50.0
 
-    Базується на тому, наскільки рідкісні ачивки вибив користувач:
-    вибив ультрарідкісну (1%) -> великий внесок; вибив 90% -> малий.
-    Внесок однієї ачивки = (100 - globalPercent). Нормуємо в 0..100.
+
+def profile_rarity_score(unlocked_percents: list[float]) -> float:
+    """Рейтинг рідкості профілю 0..100 — МОНОТОННИЙ (від нових ачивок лише росте).
+
+    Кожна вибита ачивка додає "вагу рідкості" = (100 - globalPercent)/100:
+    ультрарідкісна (1%) додає ~0.99, масова (90%) — лише ~0.10. Сумарну вагу
+    проганяємо через насичувальну криву, тож рахунок росте до 100 і НІКОЛИ не
+    падає від здобуття ачивки — на відміну від старого СЕРЕДНЬОГО внеску, яке
+    масова ачивка тягла вниз.
+
+        weight = Σ (100 - p) / 100
+        score  = 100 * (1 - e^(-weight / K))
+
+    Рідкісні важать ~10× за масові, тож рейтинг піднімають саме складні
+    здобутки; прості лише трохи додають, але ніколи не віднімають.
+    Орієнтири (K=50, avg ~30% рідкості): 50 ачивок -> ~50, 100 -> ~75,
+    200 -> ~94, 500 -> ~100.
     """
     if not unlocked_percents:
         return 0.0
-    contributions = [(100.0 - min(100.0, max(0.0, p))) for p in unlocked_percents]
-    raw = sum(contributions) / len(contributions)  # 0..100 середній внесок
-    # Легкий буст за кількість рідкісних (щоб профіль з багатьма legendary/mythic цінувався):
-    top_drops = sum(1 for p in unlocked_percents if p < 5.0)
-    bonus = min(15.0, top_drops * 0.5)
-    return round(min(100.0, raw + bonus), 1)
+    weight = sum(
+        (100.0 - min(100.0, max(0.0, p))) / 100.0 for p in unlocked_percents
+    )
+    score = 100.0 * (1.0 - math.exp(-weight / _SATURATION_K))
+    return round(score, 1)

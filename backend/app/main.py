@@ -9,6 +9,7 @@ from .db import init_db
 from .routers import (
     agent,
     auth,
+    friends,
     game,
     leaderboard,
     library,
@@ -50,6 +51,7 @@ def create_app() -> FastAPI:
     app.include_router(stats.router)
     app.include_router(settings_router.router)
     app.include_router(leaderboard.router)
+    app.include_router(friends.router)
     app.include_router(notifications.router)
 
     @app.get("/health", tags=["health"])

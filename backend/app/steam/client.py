@@ -172,6 +172,54 @@ class SteamClient:
         payload = await self._cached(f"global:{app_id}", fetch, ttl=86400)
         return payload.get("map", {})
 
+    async def get_steam_level(self, steam_id: str) -> int:
+        """Рівень Steam-профілю (IPlayerService/GetSteamLevel). 0, якщо приховано."""
+
+        async def fetch():
+            try:
+                data = await self._get(
+                    "IPlayerService/GetSteamLevel/v1/", steamid=steam_id
+                )
+            except httpx.HTTPStatusError:
+                return {"level": 0}
+            lvl = data.get("response", {}).get("player_level")
+            return {"level": int(lvl) if lvl is not None else 0}
+
+        payload = await self._cached(f"level:{steam_id}", fetch, ttl=3600)
+        return payload.get("level", 0)
+
+    async def get_friends(self, steam_id: str) -> list[dict]:
+        """Список друзів [{steamid, friend_since}].
+
+        Працює лише якщо friends list профілю ПУБЛІЧНИЙ; інакше Steam віддає
+        401/403 → повертаємо порожньо (приватний список не відрізняємо від
+        «немає друзів» — обидва кейси = порожньо).
+        """
+
+        async def fetch():
+            try:
+                data = await self._get(
+                    "ISteamUser/GetFriendList/v1/",
+                    steamid=steam_id,
+                    relationship="friend",
+                )
+            except httpx.HTTPStatusError:
+                return {"friends": []}
+            friends = data.get("friendslist", {}).get("friends", [])
+            return {
+                "friends": [
+                    {
+                        "steamid": f["steamid"],
+                        "friend_since": int(f.get("friend_since", 0) or 0),
+                    }
+                    for f in friends
+                    if f.get("steamid")
+                ]
+            }
+
+        payload = await self._cached(f"friends:{steam_id}", fetch, ttl=3600)
+        return payload.get("friends", [])
+
     # ---------- утиліти ----------
     @staticmethod
     def cover_url(app_id: int) -> str:

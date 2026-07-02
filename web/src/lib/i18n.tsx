@@ -19,8 +19,31 @@ const uk: Dict = {
   "nav.library": "Бібліотека",
   "nav.statistics": "Статистика",
   "nav.leaderboard": "Ліга",
+  "nav.friends": "Друзі",
   "nav.settings": "Налаштування",
   "nav.logout": "Вийти",
+  // friends
+  "friends.eyebrow": "Соціальне",
+  "friends.title": "Друзі",
+  "friends.subtitle":
+    "Перші друзі твого профілю з рівнем Steam і статистикою. Сортуй за рівнем, ачивками, рідкістю тощо. Клікни на друга, щоб відкрити його профіль.",
+  "friends.showLabel": "Показати",
+  "friends.sortLabel": "Сортувати",
+  "friends.sortLevel": "За рівнем",
+  "friends.sortAch": "За ачивками",
+  "friends.sortRarity": "За рідкістю",
+  "friends.sortPerfect": "За perfect",
+  "friends.sortGames": "За іграми",
+  "friends.sortName": "За іменем",
+  "friends.sortSince": "За стажем дружби",
+  "friends.level": "Рівень",
+  "friends.ach": "Ачивки",
+  "friends.perfect": "Perfect",
+  "friends.avg": "Середнє",
+  "friends.loading": "Рахуємо друзів…",
+  "friends.private":
+    "Список друзів приватний або порожній. Щоб бачити друзів — Steam → Профіль → Приватність → «Список друзів» = Публічний.",
+  "friends.countSuffix": "друзів",
   // common
   "common.loading": "Завантаження",
   "common.loadingEllipsis": "Завантаження…",
@@ -203,6 +226,12 @@ const uk: Dict = {
   "leader.subtitle":
     "Рейтинг за Rarity Score — очками за рідкісні ачивки. Що рідкісніший трофей, то більше очок він приносить.",
   "leader.rest": "Решта ліги",
+  "leader.sortLabel": "Сортувати",
+  "leader.sortRarity": "За рідкістю",
+  "leader.sortAchievements": "За к-стю ачивок",
+  "leader.sortPerfect": "За іграми на 100%",
+  "leader.rarityScore": "Rarity Score",
+  "leader.perfectLabel": "Ігор на 100%",
   "player.loading": "Завантаження профілю гравця",
   "player.notFound": "Профіль недоступний",
   "player.backToLeague": "До ліги",
@@ -276,8 +305,31 @@ const en: Dict = {
   "nav.library": "Library",
   "nav.statistics": "Statistics",
   "nav.leaderboard": "League",
+  "nav.friends": "Friends",
   "nav.settings": "Settings",
   "nav.logout": "Sign out",
+  // friends
+  "friends.eyebrow": "Social",
+  "friends.title": "Friends",
+  "friends.subtitle":
+    "The first friends from your profile with their Steam level and stats. Sort by level, achievements, rarity and more. Click a friend to open their profile.",
+  "friends.showLabel": "Show",
+  "friends.sortLabel": "Sort",
+  "friends.sortLevel": "By level",
+  "friends.sortAch": "By achievements",
+  "friends.sortRarity": "By rarity",
+  "friends.sortPerfect": "By perfect",
+  "friends.sortGames": "By games",
+  "friends.sortName": "By name",
+  "friends.sortSince": "By friendship age",
+  "friends.level": "Level",
+  "friends.ach": "Achievements",
+  "friends.perfect": "Perfect",
+  "friends.avg": "Average",
+  "friends.loading": "Computing friends…",
+  "friends.private":
+    "Friends list is private or empty. To show friends: Steam → Profile → Privacy → “Friends List” = Public.",
+  "friends.countSuffix": "friends",
   "common.loading": "Loading",
   "common.loadingEllipsis": "Loading…",
   "common.errorTitle": "Failed to load",
@@ -446,6 +498,12 @@ const en: Dict = {
   "leader.subtitle":
     "Ranked by Rarity Score — points for rare achievements. The rarer the trophy, the more points it earns.",
   "leader.rest": "Rest of the league",
+  "leader.sortLabel": "Sort by",
+  "leader.sortRarity": "By rarity",
+  "leader.sortAchievements": "By achievements",
+  "leader.sortPerfect": "By perfect games",
+  "leader.rarityScore": "Rarity Score",
+  "leader.perfectLabel": "Perfect games",
   "player.loading": "Loading player profile",
   "player.notFound": "Profile unavailable",
   "player.backToLeague": "Back to league",
@@ -512,7 +570,7 @@ const en: Dict = {
 
 const DICTS: Record<Lang, Dict> = { uk, en };
 
-type TFn = (key: string) => string;
+export type TFn = (key: string) => string;
 const I18nContext = createContext<{ lang: Lang; t: TFn }>({
   lang: "uk",
   t: (k) => uk[k] ?? k,

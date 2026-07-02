@@ -11,7 +11,8 @@ def test_stats_totals(client):
     assert totals["achievements"] == 3     # вибиті: a1, a2, b1
     assert totals["perfectGames"] == 1     # Alpha на 100%
     assert 0.0 <= totals["avgCompletion"] <= 100.0
-    assert totals["rarityScore"] == 81.5
+    # Монотонна формула рідкості: weight 2.43 -> ~4.7.
+    assert totals["rarityScore"] == 4.7
 
 
 def test_stats_rarity_counts(client):
@@ -83,14 +84,15 @@ def test_leaderboard_ranked_with_me(client):
     assert len(rows) == 11                   # 10 реальних суперників + я
     me = [r for r in rows if r["isMe"]]
     assert len(me) == 1                       # рівно один isMe
-    assert me[0]["rarityScore"] == 81.5
+    # Монотонна формула: 3 вибиті (2%,40%,15%) -> weight 2.43 -> ~4.7.
+    assert me[0]["rarityScore"] == 4.7
     assert me[0]["achievements"] == 3
     # Відсортовано за rarityScore спадно й ранги послідовні.
     scores = [r["rarityScore"] for r in rows]
     assert scores == sorted(scores, reverse=True)
     assert [r["rank"] for r in rows] == list(range(1, 12))
-    # У ростері 100.0 і 88.0 вищі за 81.5, далі йду я -> rank 3.
-    assert me[0]["rank"] == 3
+    # 3 ачивки дають скромний рахунок (4.7) — нижче за всіх суперників -> останнє місце.
+    assert me[0]["rank"] == 11
 
 
 # ---------- /api/notifications ----------

@@ -50,13 +50,25 @@ class ProfileAggregate:
 
 
 async def build_profile_aggregate(
-    steam: SteamClient, steam_id: str
+    steam: SteamClient,
+    steam_id: str,
+    max_deep: int = MAX_DEEP_GAMES,
+    sort_by_playtime: bool = False,
 ) -> ProfileAggregate:
-    """Збирає повну агрегацію профілю з того самого джерела, що /api/me."""
+    """Збирає агрегацію профілю з того самого джерела, що /api/me.
+
+    max_deep — скільки ігор сканувати вглиб (менше = швидше, але частковіші
+    числа). sort_by_playtime — брати найбільш награні ігри першими (для
+    «легкого» скану друзів це репрезентативніше за довільний порядок бібліотеки).
+    """
     summary = await steam.get_player_summary(steam_id)
     games = await steam.get_owned_games(steam_id)
 
     games_with_ach = [g for g in games if g.get("has_community_visible_stats")]
+    if sort_by_playtime:
+        games_with_ach.sort(
+            key=lambda g: g.get("playtime_forever", 0), reverse=True
+        )
 
     game_aggs: list[GameAggregate] = []
     completions: list[float] = []
@@ -72,7 +84,7 @@ async def build_profile_aggregate(
         "mythic": 0,
     }
 
-    for g in games_with_ach[:MAX_DEEP_GAMES]:
+    for g in games_with_ach[:max_deep]:
         app_id = g["appid"]
         achs = await build_achievements(steam, steam_id, app_id)
         if not achs:

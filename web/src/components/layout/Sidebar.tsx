@@ -10,6 +10,7 @@ const nav = [
   { to: "/library", key: "nav.library", icon: GridIcon },
   { to: "/statistics", key: "nav.statistics", icon: ChartIcon },
   { to: "/leaderboard", key: "nav.leaderboard", icon: TrophyIcon },
+  { to: "/friends", key: "nav.friends", icon: FriendsIcon },
   { to: "/settings", key: "nav.settings", icon: GearIcon },
 ];
 
@@ -146,6 +147,16 @@ function TrophyIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
       <path d="M6 4h12v4a6 6 0 01-12 0V4zM6 6H3v1a3 3 0 003 3M18 6h3v1a3 3 0 01-3 3M9 20h6M12 14v3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function FriendsIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <circle cx="9" cy="8" r="3.2" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M3.5 20a5.5 5.5 0 0111 0" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M16 5.2a3.2 3.2 0 010 5.6M17.5 14.6a5.5 5.5 0 013 4.9" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }

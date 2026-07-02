@@ -7,6 +7,7 @@ import { api, ApiError } from "./client";
 import { getToken } from "@/lib/auth";
 import type {
   AgentHealth,
+  FriendsResponse,
   GameDetail,
   LeaderboardEntry,
   LibraryEntry,
@@ -138,6 +139,16 @@ export function useLeaderboard() {
   return useQuery({
     queryKey: keys.leaderboard,
     queryFn: () => api.get<LeaderboardEntry[]>("/api/leaderboard"),
+  });
+}
+
+// Друзі профілю: limit визначає, скільки перших друзів рахувати на бекенді
+// (важкі запити), тож входить у ключ кешу. Скан довгий — тримаємо дані свіжими.
+export function useFriends(limit: number) {
+  return useQuery({
+    queryKey: ["friends", limit] as const,
+    queryFn: () => api.get<FriendsResponse>(`/api/friends?limit=${limit}`),
+    staleTime: 5 * 60_000,
   });
 }
 

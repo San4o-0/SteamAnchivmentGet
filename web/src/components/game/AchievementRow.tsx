@@ -1,8 +1,13 @@
 import type { CSSProperties } from "react";
 import type { Ach, RarityTier } from "@/api/types";
 import { RarityBadge } from "@/components/ui/RarityBadge";
+import { ProgressBar } from "@/components/ui/ProgressBar";
 import { UnlockButton } from "@/components/ui/UnlockButton";
 import { cn } from "@/lib/format";
+
+// Ціле показуємо без дробу (2 / 5), дробове — з одним знаком (12.5 / 20).
+const fmtNum = (n: number) =>
+  Number.isInteger(n) ? n.toLocaleString("uk-UA") : n.toFixed(1);
 
 // Loot rarity accent per tier: colored left rail on the inventory slot.
 const tierRail: Record<RarityTier, string> = {
@@ -75,6 +80,19 @@ export function AchievementRow({
           <RarityBadge tier={ach.rarityTier} globalPercent={ach.globalPercent} size="sm" />
         </div>
         <p className="mt-0.5 truncate text-sm text-muted">{ach.desc}</p>
+
+        {/* Прогрес накопичувальної ачивки: скільки з потрібного вже зроблено. */}
+        {!ach.unlocked && ach.progress && ach.progress.target > 0 && (
+          <div className="mt-2 flex items-center gap-2.5">
+            <ProgressBar
+              value={(ach.progress.current / ach.progress.target) * 100}
+              className="flex-1"
+            />
+            <span className="shrink-0 font-mono text-[0.7rem] font-semibold tabular-nums text-accent">
+              {fmtNum(ach.progress.current)} / {fmtNum(ach.progress.target)}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="shrink-0">

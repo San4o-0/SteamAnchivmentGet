@@ -3,9 +3,41 @@ import { useLeaderboard } from "@/api/hooks";
 import type { LeaderboardEntry } from "@/api/types";
 import { PageLoader } from "@/components/ui/Spinner";
 import { ErrorState } from "@/components/ui/ErrorState";
+import { Select } from "@/components/ui/Select";
 import { cn } from "@/lib/format";
-import { useT } from "@/lib/i18n";
-import type { CSSProperties } from "react";
+import { useT, type TFn } from "@/lib/i18n";
+import { useMemo, useState, type CSSProperties } from "react";
+
+// Метрики, за якими можна ранжувати лігу. Сортування — на клієнті (набір малий),
+// ранг перераховується за обраною метрикою.
+type LeaderMetric = "rarity" | "achievements" | "perfect";
+
+const METRIC_CMP: Record<
+  LeaderMetric,
+  (a: LeaderboardEntry, b: LeaderboardEntry) => number
+> = {
+  rarity: (a, b) =>
+    b.rarityScore - a.rarityScore || b.achievements - a.achievements,
+  achievements: (a, b) =>
+    b.achievements - a.achievements || b.rarityScore - a.rarityScore,
+  perfect: (a, b) =>
+    b.perfectGames - a.perfectGames || b.rarityScore - a.rarityScore,
+};
+
+const METRIC_SORT_KEY: Record<LeaderMetric, string> = {
+  rarity: "leader.sortRarity",
+  achievements: "leader.sortAchievements",
+  perfect: "leader.sortPerfect",
+};
+
+// Головне число картки/п'єдесталу залежить від активної метрики.
+function heroFor(metric: LeaderMetric, e: LeaderboardEntry, t: TFn) {
+  if (metric === "achievements")
+    return { value: e.achievements, label: t("leader.achievementsLabel") };
+  if (metric === "perfect")
+    return { value: e.perfectGames, label: t("leader.perfectLabel") };
+  return { value: e.rarityScore, label: t("leader.rarityScore") };
+}
 
 // Порядок появи п'єдесталу: срібло → золото → бронза (2 → 1 → 3).
 const podiumDelay: Record<number, number> = { 2: 0, 1: 90, 3: 180 };
@@ -45,10 +77,26 @@ function MeTag() {
   );
 }
 
-function PodiumCard({ entry }: { entry: LeaderboardEntry }) {
+function PodiumCard({
+  entry,
+  metric,
+}: {
+  entry: LeaderboardEntry;
+  metric: LeaderMetric;
+}) {
   const t = useT();
   const tier = podiumTiers[entry.rank] ?? podiumTiers[3];
   const first = entry.rank === 1;
+  const hero = heroFor(metric, entry, t);
+  // Підрядок — дві НЕактивні метрики, з'єднані через « · » (без активної).
+  const others: string[] = [];
+  if (metric !== "rarity")
+    others.push(`${entry.rarityScore.toLocaleString("uk-UA")} RS`);
+  if (metric !== "achievements")
+    others.push(
+      `${entry.achievements.toLocaleString("uk-UA")} ${t("leader.achievements")}`,
+    );
+  if (metric !== "perfect") others.push(`${entry.perfectGames} perfect`);
 
   return (
     <Link
@@ -111,14 +159,13 @@ function PodiumCard({ entry }: { entry: LeaderboardEntry }) {
             tier.score,
           )}
         >
-          {entry.rarityScore.toLocaleString("uk-UA")}
+          {hero.value.toLocaleString("uk-UA")}
         </div>
-        <div className="eyebrow mt-1">Rarity Score</div>
+        <div className="eyebrow mt-1">{hero.label}</div>
       </div>
 
       <div className="font-mono text-[0.68rem] uppercase tracking-wider text-muted">
-        {entry.achievements.toLocaleString("uk-UA")} {t("leader.achievements")} ·{" "}
-        {entry.perfectGames} perfect
+        {others.join(" · ")}
       </div>
     </Link>
   );
@@ -193,11 +240,20 @@ function LadderRow({
 export function LeaderboardPage() {
   const t = useT();
   const { data, isLoading, isError, refetch } = useLeaderboard();
+  const [metric, setMetric] = useState<LeaderMetric>("rarity");
+
+  // Пересортовуємо за обраною метрикою й перераховуємо ранг (набір малий).
+  const ranked = useMemo(() => {
+    if (!data) return [];
+    return [...data]
+      .sort(METRIC_CMP[metric])
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+  }, [data, metric]);
 
   if (isLoading) return <PageLoader label={t("leader.loading")} />;
   if (isError || !data) return <ErrorState onRetry={() => refetch()} />;
 
-  if (data.length === 0) {
+  if (ranked.length === 0) {
     return (
       <div className="animate-rise">
         <div className="panel p-12 text-center text-sm text-muted">
@@ -207,24 +263,36 @@ export function LeaderboardPage() {
     );
   }
 
-  const podium = data.filter((e) => e.rank <= 3);
-  const rest = data.filter((e) => e.rank > 3);
+  const podium = ranked.filter((e) => e.rank <= 3);
+  const rest = ranked.filter((e) => e.rank > 3);
 
   return (
     <div className="animate-rise space-y-8">
-      <header className="rounded-xl border border-line/70 bg-surface/40 p-5 backdrop-blur-sm sm:p-6">
-        <div className="eyebrow text-accent">{t("leader.eyebrow")}</div>
-        <h1 className="font-display text-3xl font-bold tracking-tight">
-          {t("leader.title")}
-        </h1>
-        <p className="mt-1 text-sm leading-relaxed text-muted">
-          {t("leader.subtitle")}
-        </p>
+      <header className="relative z-20 flex flex-wrap items-end justify-between gap-4 rounded-xl border border-line/70 bg-surface/40 p-5 backdrop-blur-sm sm:p-6">
+        <div className="min-w-0">
+          <div className="eyebrow text-accent">{t("leader.eyebrow")}</div>
+          <h1 className="font-display text-3xl font-bold tracking-tight">
+            {t("leader.title")}
+          </h1>
+          <p className="mt-1 text-sm leading-relaxed text-muted">
+            {t("leader.subtitle")}
+          </p>
+        </div>
+        <Select<LeaderMetric>
+          label={t("leader.sortLabel")}
+          value={metric}
+          onChange={setMetric}
+          options={(Object.keys(METRIC_CMP) as LeaderMetric[]).map((m) => ({
+            id: m,
+            label: t(METRIC_SORT_KEY[m]),
+          }))}
+          className="shrink-0"
+        />
       </header>
 
       <section className="grid gap-4 sm:grid-cols-3 sm:items-end sm:pt-4">
         {podium.map((entry) => (
-          <PodiumCard key={entry.steamId} entry={entry} />
+          <PodiumCard key={entry.steamId} entry={entry} metric={metric} />
         ))}
       </section>
 

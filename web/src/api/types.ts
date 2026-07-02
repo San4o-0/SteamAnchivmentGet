@@ -9,6 +9,13 @@ export type RarityTier =
   | "mythic";
 export type RoadmapGroup = "start" | "mid" | "end";
 
+// Прогрес прогресової/накопичувальної ачивки (напр. «Вбий 5 ведмедів» -> 2/5).
+// Присутній лише коли джерело (локальний агент) його віддає; інакше null.
+export interface AchProgress {
+  current: number;
+  target: number;
+}
+
 export interface Ach {
   id: string;
   name: string;
@@ -17,6 +24,7 @@ export interface Ach {
   unlocked: boolean;
   globalPercent: number;
   rarityTier: RarityTier;
+  progress?: AchProgress | null;
 }
 
 export interface MeStats {
@@ -175,6 +183,26 @@ export interface LeaderboardEntry {
   achievements: number;
   perfectGames: number;
   isMe: boolean; // рівно один true — поточний користувач
+}
+
+export interface FriendCard {
+  steamId: string;
+  name: string;
+  avatar: string;
+  level: number;
+  games: number;
+  achievements: number;
+  perfectGames: number;
+  rarityScore: number;
+  avgCompletion: number;
+  friendSince: number; // unix ts (0 = невідомо)
+}
+
+export interface FriendsResponse {
+  total: number; // усього друзів у профілі
+  limit: number; // скільки порахували
+  private: boolean; // список друзів приватний / порожній
+  friends: FriendCard[];
 }
 
 export type NotificationType =

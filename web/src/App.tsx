@@ -10,6 +10,7 @@ import { RoadmapPage } from "@/pages/RoadmapPage";
 import { StatisticsPage } from "@/pages/StatisticsPage";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { LeaderboardPage } from "@/pages/LeaderboardPage";
+import { FriendsPage } from "@/pages/FriendsPage";
 import { NotificationsPage } from "@/pages/NotificationsPage";
 import { PlayerPage } from "@/pages/PlayerPage";
 import { isAuthed } from "@/lib/auth";
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="/game/:appId/roadmap" element={<RoadmapPage />} />
           <Route path="/statistics" element={<StatisticsPage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
+          <Route path="/friends" element={<FriendsPage />} />
           <Route path="/player/:steamId" element={<PlayerPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/notifications" element={<NotificationsPage />} />

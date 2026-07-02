@@ -18,6 +18,15 @@ class CamelModel(BaseModel):
 
 
 # --- Ach ---
+class AchProgress(CamelModel):
+    """Прогрес прогресової ачивки (напр. 2/5). Джерело — локальний агент
+    (steamclient.dll: GetAchievementProgressLimits + значення стата). Web API
+    цього не віддає, тож для читання зі Steam лишається None."""
+
+    current: float
+    target: float
+
+
 class Ach(CamelModel):
     id: str
     name: str
@@ -26,6 +35,7 @@ class Ach(CamelModel):
     unlocked: bool = False
     global_percent: float = Field(0.0, alias="globalPercent")
     rarity_tier: RarityTier = Field("common", alias="rarityTier")
+    progress: AchProgress | None = None
 
 
 # --- /api/me ---
@@ -180,6 +190,27 @@ class LeaderboardEntry(CamelModel):
     achievements: int
     perfect_games: int = Field(alias="perfectGames")
     is_me: bool = Field(alias="isMe")
+
+
+# --- GET /api/friends ---
+class FriendCard(CamelModel):
+    steam_id: str = Field(alias="steamId")
+    name: str
+    avatar: str
+    level: int = 0
+    games: int = 0
+    achievements: int = 0
+    perfect_games: int = Field(0, alias="perfectGames")
+    rarity_score: float = Field(0.0, alias="rarityScore")
+    avg_completion: float = Field(0.0, alias="avgCompletion")
+    friend_since: int = Field(0, alias="friendSince")
+
+
+class FriendsResponse(CamelModel):
+    total: int              # усього друзів у профілі (публічний список)
+    limit: int              # скільки з них порахували в цій відповіді
+    private: bool           # True, якщо список друзів приватний / порожній
+    friends: list[FriendCard]
 
 
 # --- /api/notifications ---

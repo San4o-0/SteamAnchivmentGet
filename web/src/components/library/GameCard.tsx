@@ -55,10 +55,12 @@ export function GameCard({
 
         <div
           className={cn(
-            "absolute right-2 top-2 rounded-md border px-2 py-0.5 font-mono text-[0.72rem] font-semibold tabular-nums backdrop-blur-sm",
+            // Суцільна заливка + контрастний текст — читабельно на будь-якій
+            // обкладинці; тінь відділяє бейдж від світлих ділянок арту.
+            "absolute right-2 top-2 rounded-md px-2 py-0.5 font-mono text-[0.72rem] font-bold tabular-nums shadow-[0_2px_8px_rgba(0,0,0,0.55)]",
             complete
-              ? "border-gold/60 bg-gold/15 text-gold shadow-gold"
-              : "border-accent/50 bg-accent/15 text-accent shadow-glow",
+              ? "bg-gold text-[#141519]"
+              : "bg-accent text-white",
           )}
         >
           {formatPercent(game.completion)}

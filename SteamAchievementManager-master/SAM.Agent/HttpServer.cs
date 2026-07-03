@@ -74,7 +74,7 @@ namespace SAM.Agent
         public HttpServer()
         {
             _listener.Prefixes.Add($"http://{Host}:{Port}/");
-            _version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.0";
+            _version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.1";
         }
 
         public string Url => $"http://{Host}:{Port}";

@@ -260,7 +260,7 @@ export function StatisticsPage() {
 
       {/* ── Найрідкісніші здобутки ────────────────────────────────── */}
       <section aria-label={t("stats.rareLabel")}>
-        <h2 className="eyebrow mb-3">{t("stats.rareHeading")}</h2>
+        <h2 className="eyebrow-chip mb-3">{t("stats.rareHeading")}</h2>
         {topRareUnlocks.length === 0 ? (
           <div className="panel p-8 text-center text-sm text-muted">
             {t("stats.rareEmpty")}
@@ -300,7 +300,7 @@ export function StatisticsPage() {
 
       {/* ── Найближчі до 100% ─────────────────────────────────────── */}
       <section aria-label={t("stats.nearLabel")}>
-        <h2 className="eyebrow mb-3">{t("stats.nearHeading")}</h2>
+        <h2 className="eyebrow-chip mb-3">{t("stats.nearHeading")}</h2>
         {library.isLoading ? (
           <div className="panel p-8 text-center text-sm text-muted">
             {t("stats.loadingGames")}

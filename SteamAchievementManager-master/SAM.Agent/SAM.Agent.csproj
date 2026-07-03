@@ -11,7 +11,7 @@
     <Company>Gibbed</Company>
     <Authors>Gibbed</Authors>
     <Description>Local HTTP unlock agent built on top of SAM.API (steamclient.dll interop).</Description>
-    <Version>1.0.1</Version>
+    <Version>1.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>

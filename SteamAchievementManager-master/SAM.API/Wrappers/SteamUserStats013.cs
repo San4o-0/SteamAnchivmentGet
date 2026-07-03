@@ -229,5 +229,53 @@ namespace SAM.API.Wrappers
                 achievementsToo);
         }
         #endregion
+
+        #region GetNumAchievements
+        [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+        private delegate uint NativeGetNumAchievements(IntPtr self);
+
+        public uint GetNumAchievements()
+        {
+            return this.Call<uint, NativeGetNumAchievements>(
+                this.Functions.GetNumAchievements,
+                this.ObjectAddress);
+        }
+        #endregion
+
+        #region GetAchievementName
+        [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+        private delegate IntPtr NativeGetAchievementName(IntPtr self, uint index);
+
+        public string GetAchievementName(uint index)
+        {
+            var result = this.Call<IntPtr, NativeGetAchievementName>(
+                this.Functions.GetAchievementName,
+                this.ObjectAddress,
+                index);
+            return NativeStrings.PointerToString(result);
+        }
+        #endregion
+
+        #region GetAchievementProgressLimits (int)
+        [UnmanagedFunctionPointer(CallingConvention.ThisCall)]
+        [return: MarshalAs(UnmanagedType.I1)]
+        private delegate bool NativeGetAchievementProgressLimitsInt(
+            IntPtr self,
+            IntPtr name,
+            out int min,
+            out int max);
+
+        // True for progress/stat-gated achievements, filling min/max (the target).
+        // False (min=max=0) for plain achievements with no progress bar.
+        public bool GetAchievementProgressLimits(string name, out int min, out int max)
+        {
+            using (var nativeName = NativeStrings.StringToStringHandle(name))
+            {
+                var call = this.GetFunction<NativeGetAchievementProgressLimitsInt>(
+                    this.Functions.GetAchievementProgressLimitsInteger);
+                return call(this.ObjectAddress, nativeName.Handle, out min, out max);
+            }
+        }
+        #endregion
     }
 }

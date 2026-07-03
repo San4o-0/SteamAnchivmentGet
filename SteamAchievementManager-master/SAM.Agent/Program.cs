@@ -6,6 +6,7 @@
  */
 
 using System;
+using System.Collections.Generic;
 using System.Threading;
 
 namespace SAM.Agent
@@ -15,6 +16,65 @@ namespace SAM.Agent
         private static readonly ManualResetEvent Shutdown = new ManualResetEvent(false);
 
         public static int Main(string[] args)
+        {
+            // Worker modes: steamclient.dll binds ONE appId per process lifetime,
+            // so the HTTP server spawns a fresh copy of itself per request to init
+            // a specific appId. The worker reads its {appId,ids} payload as JSON on
+            // stdin and writes the contract response as JSON on stdout, then exits.
+            if (args.Length > 0 && args[0] == "--unlock")
+            {
+                return RunUnlockWorker();
+            }
+            if (args.Length > 0 && args[0] == "--progress")
+            {
+                return RunProgressWorker();
+            }
+
+            return RunServer();
+        }
+
+        private static int RunUnlockWorker()
+        {
+            try
+            {
+                var obj = MiniJson.ParseObject(Console.In.ReadToEnd());
+                MiniJson.TryGetAppId(obj, "appId", out long appId);
+                List<string> ids = MiniJson.GetStringList(obj, "ids");
+                SteamUnlocker.UnlockResult result = new SteamUnlocker().UnlockMany(appId, ids);
+                Console.Out.Write(MiniJson.Serialize(SteamUnlocker.BuildUnlockResponse(result)));
+            }
+            catch (Exception e)
+            {
+                Console.Out.Write(MiniJson.Serialize(new Dictionary<string, object>
+                {
+                    ["ok"] = false,
+                    ["error"] = "worker error: " + e.Message,
+                }));
+            }
+            return 0;
+        }
+
+        private static int RunProgressWorker()
+        {
+            try
+            {
+                var obj = MiniJson.ParseObject(Console.In.ReadToEnd());
+                MiniJson.TryGetAppId(obj, "appId", out long appId);
+                SteamUnlocker.ProgressResult result = new SteamUnlocker().ReadProgress(appId);
+                Console.Out.Write(MiniJson.Serialize(SteamUnlocker.BuildProgressResponse(result)));
+            }
+            catch (Exception e)
+            {
+                Console.Out.Write(MiniJson.Serialize(new Dictionary<string, object>
+                {
+                    ["ok"] = false,
+                    ["error"] = "worker error: " + e.Message,
+                }));
+            }
+            return 0;
+        }
+
+        private static int RunServer()
         {
             HttpServer server;
             try
@@ -30,7 +90,7 @@ namespace SAM.Agent
             }
 
             Console.WriteLine("SAM.Agent listening on " + server.Url);
-            Console.WriteLine("Endpoints: GET /health, POST /unlock, POST /unlock/batch");
+            Console.WriteLine("Endpoints: GET /health, POST /unlock, POST /unlock/batch, POST /progress");
             Console.WriteLine("Steam running: " + SteamUnlocker.IsSteamRunning());
             Console.WriteLine("Press Ctrl+C to stop.");
 

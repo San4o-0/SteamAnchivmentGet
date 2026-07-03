@@ -13,11 +13,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Reflection;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace SAM.Agent
 {
@@ -26,6 +28,10 @@ namespace SAM.Agent
         private const string Host = "127.0.0.1";
         private const int Port = 57343;
         private const long MaxBodyBytes = 64 * 1024; // ліміт тіла запиту (DoS-захист)
+
+        // Steam init + RequestUserStats can take up to ~10s; a worker also spawns
+        // a fresh process and loads steamclient.dll. Give it generous headroom.
+        private const int WorkerTimeoutMs = 30_000;
 
         // Origin-allowlist: лише ці сайти можуть керувати агентом. Дефолт — dev
         // + прод (achivo.pages.dev). Додаткові домени — через env
@@ -66,15 +72,17 @@ namespace SAM.Agent
                 || host == "localhost";
         }
 
+        // No SteamUnlocker here on purpose: the server process must NEVER call
+        // Initialize(appId), or it would bind steamclient to one appId for its
+        // whole life. All Steam work runs in short-lived worker subprocesses.
         private readonly HttpListener _listener = new HttpListener();
-        private readonly SteamUnlocker _unlocker = new SteamUnlocker();
         private readonly string _version;
         private volatile bool _running;
 
         public HttpServer()
         {
             _listener.Prefixes.Add($"http://{Host}:{Port}/");
-            _version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.1";
+            _version = Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.1.0";
         }
 
         public string Url => $"http://{Host}:{Port}";
@@ -188,6 +196,11 @@ namespace SAM.Agent
                     HandleUnlockBatch(context);
                     break;
 
+                case "/progress":
+                    if (request.HttpMethod != "POST") { MethodNotAllowed(context); return; }
+                    HandleProgress(context);
+                    break;
+
                 default:
                     WriteJson(context, 404, new Dictionary<string, object> { ["error"] = "not found" });
                     break;
@@ -226,14 +239,12 @@ namespace SAM.Agent
                 return;
             }
 
-            SteamUnlocker.UnlockResult result = _unlocker.Unlock(appId, achievementId);
-
-            var body = new Dictionary<string, object> { ["ok"] = result.Ok };
-            if (!result.Ok && !string.IsNullOrEmpty(result.Error))
+            string payload = MiniJson.Serialize(new Dictionary<string, object>
             {
-                body["error"] = result.Error;
-            }
-            WriteJson(context, 200, body);
+                ["appId"] = appId,
+                ["ids"] = new List<object> { achievementId },
+            });
+            RelayWorker(context, "--unlock", payload);
         }
 
         private void HandleUnlockBatch(HttpListenerContext context)
@@ -257,29 +268,128 @@ namespace SAM.Agent
                 return;
             }
 
-            SteamUnlocker.UnlockResult result = _unlocker.UnlockMany(appId, ids);
-
-            var resultsArray = new List<object>();
-            foreach (SteamUnlocker.AchievementResult r in result.Results)
+            var idList = new List<object>();
+            foreach (string id in ids) { idList.Add(id); }
+            string payload = MiniJson.Serialize(new Dictionary<string, object>
             {
-                var item = new Dictionary<string, object> { ["id"] = r.Id, ["ok"] = r.Ok };
-                if (!r.Ok && !string.IsNullOrEmpty(r.Error))
+                ["appId"] = appId,
+                ["ids"] = idList,
+            });
+            RelayWorker(context, "--unlock", payload);
+        }
+
+        private void HandleProgress(HttpListenerContext context)
+        {
+            if (!TryReadBody(context, out Dictionary<string, object> obj, out string readError))
+            {
+                WriteJson(context, 400, new Dictionary<string, object> { ["ok"] = false, ["error"] = readError });
+                return;
+            }
+
+            if (!MiniJson.TryGetAppId(obj, "appId", out long appId))
+            {
+                WriteJson(context, 400, new Dictionary<string, object> { ["ok"] = false, ["error"] = "missing or invalid 'appId'" });
+                return;
+            }
+
+            string payload = MiniJson.Serialize(new Dictionary<string, object> { ["appId"] = appId });
+            RelayWorker(context, "--progress", payload);
+        }
+
+        #endregion
+
+        #region Worker subprocess
+
+        // Spawns a fresh copy of this exe in the given worker mode, feeds it the
+        // JSON payload on stdin, and relays its stdout (the contract response)
+        // verbatim to the HTTP caller. A fresh process per call is what lets us
+        // init a different appId each time (steamclient binds one per process).
+        private void RelayWorker(HttpListenerContext context, string mode, string payload)
+        {
+            string output = RunWorker(mode, payload);
+            if (output == null)
+            {
+                WriteJson(context, 200, new Dictionary<string, object>
                 {
-                    item["error"] = r.Error;
-                }
-                resultsArray.Add(item);
+                    ["ok"] = false,
+                    ["error"] = "the unlock worker failed or timed out",
+                });
+                return;
             }
+            WriteRawJson(context, 200, output);
+        }
 
-            var body = new Dictionary<string, object>
+        private static string RunWorker(string mode, string stdinJson)
+        {
+            string exePath = Assembly.GetExecutingAssembly().Location;
+            var psi = new ProcessStartInfo
             {
-                ["ok"] = result.Ok,
-                ["results"] = resultsArray,
+                FileName = exePath,
+                Arguments = mode,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
             };
-            if (!result.Ok && !string.IsNullOrEmpty(result.Error))
+
+            Process proc = null;
+            try
             {
-                body["error"] = result.Error;
+                proc = Process.Start(psi);
+                if (proc == null) { return null; }
+
+                // Drain stdout/stderr asynchronously to avoid a pipe-buffer
+                // deadlock, then feed the (small) payload and close stdin so the
+                // worker's Console.In.ReadToEnd() returns.
+                Task<string> stdout = proc.StandardOutput.ReadToEndAsync();
+                Task<string> stderr = proc.StandardError.ReadToEndAsync();
+                proc.StandardInput.Write(stdinJson);
+                proc.StandardInput.Close();
+
+                if (!proc.WaitForExit(WorkerTimeoutMs))
+                {
+                    try { proc.Kill(); } catch { /* already exiting */ }
+                    return null;
+                }
+
+                Task.WaitAll(new Task[] { stdout, stderr }, 2000);
+                return ExtractJson(stdout.Result);
             }
-            WriteJson(context, 200, body);
+            catch
+            {
+                return null;
+            }
+            finally
+            {
+                proc?.Dispose();
+            }
+        }
+
+        // steamclient.dll can spew its own log lines to stdout when a worker
+        // connects. Our response is a single JSON object, so keep only the span
+        // from the first '{' to the last '}' and drop any surrounding noise.
+        private static string ExtractJson(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) { return null; }
+            int start = raw.IndexOf('{');
+            int end = raw.LastIndexOf('}');
+            if (start < 0 || end < start) { return null; }
+            return raw.Substring(start, end - start + 1);
+        }
+
+        private static void WriteRawJson(HttpListenerContext context, int statusCode, string json)
+        {
+            byte[] buffer = Encoding.UTF8.GetBytes(json);
+            HttpListenerResponse response = context.Response;
+            response.StatusCode = statusCode;
+            response.ContentType = "application/json";
+            response.ContentEncoding = Encoding.UTF8;
+            response.ContentLength64 = buffer.Length;
+            using (Stream output = response.OutputStream)
+            {
+                output.Write(buffer, 0, buffer.Length);
+            }
         }
 
         #endregion

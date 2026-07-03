@@ -50,6 +50,20 @@ namespace SAM.Agent
             public List<AchievementResult> Results = new List<AchievementResult>();
         }
 
+        public struct ProgressItem
+        {
+            public string Id;
+            public int Min;
+            public int Max;
+        }
+
+        public sealed class ProgressResult
+        {
+            public bool Ok;
+            public string Error;
+            public List<ProgressItem> Items = new List<ProgressItem>();
+        }
+
         #endregion
 
         #region Health
@@ -328,6 +342,148 @@ namespace SAM.Agent
                 default:
                     return string.IsNullOrEmpty(e.Message) ? "failed to initialize Steam client" : e.Message;
             }
+        }
+
+        #endregion
+
+        #region Progress
+
+        /// <summary>
+        /// Enumerates the app's achievements and returns those that are
+        /// progress/stat-gated (GetAchievementProgressLimits reports a target).
+        /// These cannot be force-unlocked via SetAchievement, so the UI uses this
+        /// to show a target and disable the unlock button for them.
+        /// </summary>
+        public ProgressResult ReadProgress(long appId)
+        {
+            var result = new ProgressResult();
+
+            if (appId <= 0)
+            {
+                result.Ok = false;
+                result.Error = "invalid appId";
+                return result;
+            }
+
+            lock (_steamLock)
+            {
+                API.Client client = null;
+                try
+                {
+                    client = new API.Client();
+
+                    try
+                    {
+                        client.Initialize(appId);
+                    }
+                    catch (API.ClientInitializeException e)
+                    {
+                        result.Ok = false;
+                        result.Error = DescribeInitFailure(e);
+                        return result;
+                    }
+                    catch (DllNotFoundException)
+                    {
+                        result.Ok = false;
+                        result.Error = "steamclient.dll could not be loaded";
+                        return result;
+                    }
+
+                    if (!RequestStats(client, out string statsError))
+                    {
+                        result.Ok = false;
+                        result.Error = statsError;
+                        return result;
+                    }
+
+                    uint count = client.SteamUserStats.GetNumAchievements();
+                    for (uint i = 0; i < count; i++)
+                    {
+                        string name = client.SteamUserStats.GetAchievementName(i);
+                        if (string.IsNullOrEmpty(name))
+                        {
+                            continue;
+                        }
+
+                        // max>min means Steam tracks a progress target for this
+                        // achievement (e.g. 0..3 "kill 3 sharks"). Plain achievements
+                        // report min=max=0 and are skipped.
+                        if (client.SteamUserStats.GetAchievementProgressLimits(name, out int min, out int max)
+                            && max > 0 && max > min)
+                        {
+                            result.Items.Add(new ProgressItem { Id = name, Min = min, Max = max });
+                        }
+                    }
+
+                    result.Ok = true;
+                    return result;
+                }
+                catch (Exception e)
+                {
+                    result.Ok = false;
+                    result.Error = "unexpected error: " + e.Message;
+                    return result;
+                }
+                finally
+                {
+                    client?.Dispose();
+                }
+            }
+        }
+
+        #endregion
+
+        #region Response serialization (shared by the worker subprocess)
+
+        /// <summary>Builds the /unlock contract response object for MiniJson.</summary>
+        public static Dictionary<string, object> BuildUnlockResponse(UnlockResult result)
+        {
+            var resultsArray = new List<object>();
+            foreach (AchievementResult r in result.Results)
+            {
+                var item = new Dictionary<string, object> { ["id"] = r.Id, ["ok"] = r.Ok };
+                if (!r.Ok && !string.IsNullOrEmpty(r.Error))
+                {
+                    item["error"] = r.Error;
+                }
+                resultsArray.Add(item);
+            }
+
+            var body = new Dictionary<string, object>
+            {
+                ["ok"] = result.Ok,
+                ["results"] = resultsArray,
+            };
+            if (!result.Ok && !string.IsNullOrEmpty(result.Error))
+            {
+                body["error"] = result.Error;
+            }
+            return body;
+        }
+
+        /// <summary>Builds the /progress contract response object for MiniJson.</summary>
+        public static Dictionary<string, object> BuildProgressResponse(ProgressResult result)
+        {
+            var progress = new Dictionary<string, object>();
+            foreach (ProgressItem p in result.Items)
+            {
+                progress[p.Id] = new Dictionary<string, object>
+                {
+                    ["min"] = p.Min,
+                    ["max"] = p.Max,
+                };
+            }
+
+            var body = new Dictionary<string, object>
+            {
+                ["ok"] = result.Ok,
+                ["progress"] = progress,
+            };
+            if (!result.Ok && !string.IsNullOrEmpty(result.Error))
+            {
+                body["error"] = result.Error;
+            }
+            return body;
         }
 
         #endregion

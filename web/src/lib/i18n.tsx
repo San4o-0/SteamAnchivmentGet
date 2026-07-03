@@ -183,6 +183,10 @@ const uk: Dict = {
   // unlock button
   "unlock.retry": "Повторити",
   "unlock.noResponse": "Агент не відповів. Спробуйте ще раз.",
+  "unlock.inGame": "У грі",
+  "unlock.progressReason":
+    "Ця ачивка вибивається накопиченням прогресу в грі — агент не може виставити її напряму.",
+  "ach.goal": "ціль",
   // statistics
   "stats.loadingStats": "Завантаження статистики",
   "stats.eyebrow": "Статистика",
@@ -462,6 +466,10 @@ const en: Dict = {
   "lib.sortName": "Name (A–Z)",
   "unlock.retry": "Retry",
   "unlock.noResponse": "The agent did not respond. Please try again.",
+  "unlock.inGame": "In-game",
+  "unlock.progressReason":
+    "This achievement is earned by accumulating progress in-game — the agent can't set it directly.",
+  "ach.goal": "goal",
   "stats.loadingStats": "Loading statistics",
   "stats.eyebrow": "Statistics",
   "stats.title": "Your progress",

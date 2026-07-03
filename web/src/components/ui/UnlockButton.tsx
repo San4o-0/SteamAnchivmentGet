@@ -25,6 +25,9 @@ interface Props {
   size?: "sm" | "md";
   className?: string;
   onDone?: () => void;
+  // When set, the achievement can't be force-unlocked (e.g. progress/stat-gated):
+  // render a disabled pill with this text as the tooltip instead of the button.
+  disabledReason?: string;
 }
 
 // Стани: idle → loading → done | error. Часткова невдача (ok:false з
@@ -37,6 +40,7 @@ export function UnlockButton({
   size = "md",
   className,
   onDone,
+  disabledReason,
 }: Props) {
   const t = useT();
   const mutation = useUnlock(appId);
@@ -54,6 +58,23 @@ export function UnlockButton({
         )}
       >
         <CheckIcon /> Unlocked
+      </span>
+    );
+  }
+
+  // Progress/stat-gated achievement: the agent can't force it, so show a muted,
+  // non-interactive pill (tooltip explains why) instead of an unlock button.
+  if (disabledReason) {
+    return (
+      <span
+        title={disabledReason}
+        className={cn(
+          "inline-flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-line/60 bg-raised/50 font-mono font-medium uppercase tracking-wider text-muted",
+          sizing,
+          className,
+        )}
+      >
+        <LockIcon /> {t("unlock.inGame")}
       </span>
     );
   }

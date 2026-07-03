@@ -6,7 +6,7 @@
 // Агент віддає CORS `*` + Access-Control-Allow-Private-Network: true, тож
 // виклик із HTTPS-сайту дозволений (Chrome Private Network Access).
 
-import type { AgentHealth, UnlockResponse } from "./types";
+import type { AgentHealth, AgentProgressResponse, UnlockResponse } from "./types";
 
 const DEFAULT_AGENT_URL = "http://127.0.0.1:57343";
 const STORAGE_KEY = "sam.agentUrl";
@@ -45,9 +45,18 @@ export function setAgentUrl(url: string): boolean {
 // лишав би health-запит вічно pending і банер «офлайн» ніколи б не з'явився.
 const AGENT_TIMEOUT_MS = 4000;
 
-async function agentFetch<T>(path: string, init?: RequestInit): Promise<T> {
+// unlock/progress спавнять окремий worker-процес (steamclient біндиться до
+// одного appId на процес), який вантажить steamclient.dll і чекає стати від
+// Steam — це секунди, а не мілісекунди. Тому їм даємо значно довший таймаут.
+const AGENT_WORK_TIMEOUT_MS = 35000;
+
+async function agentFetch<T>(
+  path: string,
+  init?: RequestInit,
+  timeoutMs: number = AGENT_TIMEOUT_MS,
+): Promise<T> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), AGENT_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   let res: Response;
   try {
     res = await fetch(`${getAgentUrl()}${path}`, {
@@ -82,8 +91,26 @@ export function agentHealth(): Promise<AgentHealth> {
 
 // POST /unlock/batch { appId, ids } -> { ok, results:[{id, ok}] }.
 export function agentUnlock(appId: number, ids: string[]): Promise<UnlockResponse> {
-  return agentFetch<UnlockResponse>("/unlock/batch", {
-    method: "POST",
-    body: JSON.stringify({ appId, ids }),
-  });
+  return agentFetch<UnlockResponse>(
+    "/unlock/batch",
+    {
+      method: "POST",
+      body: JSON.stringify({ appId, ids }),
+    },
+    AGENT_WORK_TIMEOUT_MS,
+  );
+}
+
+// POST /progress { appId } -> { ok, progress: { <id>: { min, max } } }.
+// Lists the app's progress/stat-gated achievements (which the agent can't
+// force-unlock), so the UI can show a goal and disable their unlock button.
+export function agentProgress(appId: number): Promise<AgentProgressResponse> {
+  return agentFetch<AgentProgressResponse>(
+    "/progress",
+    {
+      method: "POST",
+      body: JSON.stringify({ appId }),
+    },
+    AGENT_WORK_TIMEOUT_MS,
+  );
 }

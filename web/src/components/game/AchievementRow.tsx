@@ -1,9 +1,10 @@
 import type { CSSProperties } from "react";
-import type { Ach, RarityTier } from "@/api/types";
+import type { Ach, AgentProgressEntry, RarityTier } from "@/api/types";
 import { RarityBadge } from "@/components/ui/RarityBadge";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { UnlockButton } from "@/components/ui/UnlockButton";
 import { cn } from "@/lib/format";
+import { useT } from "@/lib/i18n";
 
 // Ціле показуємо без дробу (2 / 5), дробове — з одним знаком (12.5 / 20).
 const fmtNum = (n: number) =>
@@ -32,11 +33,17 @@ export function AchievementRow({
   appId,
   ach,
   style,
+  progressGate,
 }: {
   appId: number;
   ach: Ach;
   style?: CSSProperties;
+  // Present when the agent reports this achievement as progress/stat-gated:
+  // it can't be force-unlocked, so we show its goal and disable the button.
+  progressGate?: AgentProgressEntry;
 }) {
+  const t = useT();
+  const gated = !ach.unlocked && progressGate != null;
   return (
     <div
       style={style}
@@ -81,6 +88,15 @@ export function AchievementRow({
         </div>
         <p className="mt-0.5 truncate text-sm text-muted">{ach.desc}</p>
 
+        {/* Стат-гейтована ачивка (агент не може виставити): показуємо ЦІЛЬ.
+            Steam не віддає поточне значення, тож без «X/N» — лише «goal N». */}
+        {gated && !ach.progress && (
+          <div className="mt-1.5 inline-flex items-center gap-1.5 rounded border border-accent/40 bg-accent/10 px-2 py-0.5 font-mono text-[0.68rem] font-semibold uppercase tracking-wider text-accent">
+            <span aria-hidden>🎯</span>
+            {t("ach.goal")} {progressGate?.max}
+          </div>
+        )}
+
         {/* Прогрес накопичувальної ачивки: скільки з потрібного вже зроблено. */}
         {!ach.unlocked && ach.progress && ach.progress.target > 0 && (
           <div className="mt-2 flex items-center gap-2.5">
@@ -96,7 +112,13 @@ export function AchievementRow({
       </div>
 
       <div className="shrink-0">
-        <UnlockButton appId={appId} ids={[ach.id]} unlocked={ach.unlocked} size="sm" />
+        <UnlockButton
+          appId={appId}
+          ids={[ach.id]}
+          unlocked={ach.unlocked}
+          size="sm"
+          disabledReason={gated ? t("unlock.progressReason") : undefined}
+        />
       </div>
     </div>
   );

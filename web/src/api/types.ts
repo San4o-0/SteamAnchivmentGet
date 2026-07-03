@@ -88,6 +88,20 @@ export interface UnlockResponse {
   error?: string;
 }
 
+// Local agent /progress: for each progress/stat-gated achievement, the min and
+// max (target) of its progress bar. Steam has no API for the *current* value,
+// so we only learn which achievements are gated and their goal.
+export interface AgentProgressEntry {
+  min: number;
+  max: number;
+}
+
+export interface AgentProgressResponse {
+  ok: boolean;
+  progress: Record<string, AgentProgressEntry>;
+  error?: string;
+}
+
 export interface AgentHealth {
   steamRunning: boolean;
   version: string;

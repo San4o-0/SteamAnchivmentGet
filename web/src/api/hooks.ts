@@ -4,7 +4,12 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { api } from "./client";
-import { agentHealth, agentUnlock } from "./agent";
+import { agentHealth, agentProgress, agentUnlock } from "./agent";
+import {
+  getUnlockedOverlay,
+  pruneConfirmed,
+  recordUnlocked,
+} from "./unlockOverlay";
 import type {
   FriendsResponse,
   GameDetail,
@@ -19,12 +24,34 @@ import type {
   Stats,
 } from "./types";
 
+// Merge the local "just unlocked" overlay onto a game's achievements, so a
+// reload keeps showing them done while the backend cache / Steam Web API lag.
+// Also recomputes completion (backend formula: done / total * 100, 1 decimal)
+// so the header % stays consistent with the flipped achievements.
+function mergeOverlayIntoGame(appId: number, game: GameDetail): GameDetail {
+  const overlay = getUnlockedOverlay(appId);
+  if (overlay.size === 0) return game;
+  let changed = false;
+  const achievements = game.achievements.map((a) => {
+    if (a.unlocked || !overlay.has(a.id)) return a;
+    changed = true;
+    return { ...a, unlocked: true };
+  });
+  if (!changed) return game;
+  const done = achievements.filter((a) => a.unlocked).length;
+  const completion = achievements.length
+    ? Math.round((done / achievements.length) * 1000) / 10
+    : game.completion;
+  return { ...game, achievements, completion };
+}
+
 export const keys = {
   me: ["me"] as const,
   library: ["library"] as const,
   game: (appId: number) => ["game", appId] as const,
   roadmap: (appId: number) => ["roadmap", appId] as const,
   health: ["health"] as const,
+  agentProgress: (appId: number) => ["agentProgress", appId] as const,
   stats: ["stats"] as const,
   settings: ["settings"] as const,
   leaderboard: ["leaderboard"] as const,
@@ -48,8 +75,17 @@ export function useLibrary() {
 export function useGame(appId: number) {
   return useQuery({
     queryKey: keys.game(appId),
-    queryFn: () => api.get<GameDetail>(`/api/game/${appId}`),
+    queryFn: async () => {
+      const game = await api.get<GameDetail>(`/api/game/${appId}`);
+      // Fresh authoritative data → drop overlay ids the backend now confirms.
+      pruneConfirmed(
+        appId,
+        game.achievements.filter((a) => a.unlocked).map((a) => a.id),
+      );
+      return game;
+    },
     enabled: Number.isFinite(appId),
+    select: (game) => mergeOverlayIntoGame(appId, game),
   });
 }
 
@@ -58,6 +94,13 @@ export function useRoadmap(appId: number) {
     queryKey: keys.roadmap(appId),
     queryFn: () => api.get<Roadmap>(`/api/game/${appId}/roadmap`),
     enabled: Number.isFinite(appId),
+    // Roadmap lists only locked achievements; hide any the user just unlocked.
+    select: (roadmap) => {
+      const overlay = getUnlockedOverlay(appId);
+      if (overlay.size === 0) return roadmap;
+      const steps = roadmap.steps.filter((s) => !overlay.has(s.ach.id));
+      return steps.length === roadmap.steps.length ? roadmap : { ...roadmap, steps };
+    },
   });
 }
 
@@ -74,13 +117,34 @@ export function useAgentHealth() {
   });
 }
 
+// Прогрес/захищені ачивки читаємо НАПРЯМУ з агента (POST /progress). Повертає
+// { progress: { <id>: {min,max} } } — які ачивки стат-гейтовані. Помилка (агент
+// офлайн) не критична: тоді просто нема гейтингу. Набір статичний на гру, тож
+// кешуємо надовго.
+export function useAgentProgress(appId: number) {
+  return useQuery({
+    queryKey: keys.agentProgress(appId),
+    queryFn: () => agentProgress(appId),
+    enabled: Number.isFinite(appId),
+    retry: false,
+    staleTime: 5 * 60_000,
+  });
+}
+
 // Unlock теж іде НАПРЯМУ в агент (POST /unlock/batch). Після успіху інвалідуємо
 // game/roadmap/library/me, щоб UI підтягнув новий стан із бекенду.
 export function useUnlock(appId: number) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (ids: string[]) => agentUnlock(appId, ids),
-    onSuccess: () => {
+    onSuccess: (res, ids) => {
+      // Persist locally so a reload keeps them unlocked until the backend (its
+      // 10-min cache + Steam Web API lag) catches up. Trust per-id results when
+      // present; fall back to the requested ids if the agent omitted them.
+      const unlocked = res.results?.length
+        ? res.results.filter((r) => r.ok).map((r) => r.id)
+        : ids;
+      recordUnlocked(appId, unlocked);
       qc.invalidateQueries({ queryKey: keys.game(appId) });
       qc.invalidateQueries({ queryKey: keys.roadmap(appId) });
       qc.invalidateQueries({ queryKey: keys.library });

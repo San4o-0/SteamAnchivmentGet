@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
-import { useGame } from "@/api/hooks";
+import { useAgentProgress, useGame } from "@/api/hooks";
 import { AchievementRow } from "@/components/game/AchievementRow";
 import {
   ACH_SORTS,
@@ -22,6 +22,10 @@ export function GameDetailPage() {
   const { appId } = useParams();
   const id = Number(appId);
   const { data, isLoading, isError, refetch } = useGame(id);
+  // Which achievements are progress/stat-gated (from the local agent). Absent
+  // when the agent is offline — then nothing is gated, unlock stays available.
+  const { data: agentProgress } = useAgentProgress(id);
+  const progressMap = agentProgress?.ok ? agentProgress.progress : undefined;
 
   // Великий % «набігає» до значення (хук — до ранніх return-ів).
   const completionCount = useCountUp(data?.completion ?? 0);
@@ -137,6 +141,7 @@ export function GameDetailPage() {
               appId={data.appId}
               ach={ach}
               style={stagger(i)}
+              progressGate={progressMap?.[ach.id]}
             />
           ))}
         </div>

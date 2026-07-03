@@ -1,0 +1,28 @@
+# Render Blueprint — бекенд Achivo (FastAPI, Docker).
+# New → Blueprint → підключи цей репозиторій. Секрети (sync:false) вписуєш у
+# дашборді після створення. DB — окремо в Neon (див. DEPLOY.md).
+services:
+  - type: web
+    name: achivo-api
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /api/agent/health
+    envVars:
+      - key: ENV
+        value: prod
+      - key: STEAM_API_KEY
+        sync: false            # steamcommunity.com/dev/apikey
+      - key: JWT_SECRET
+        generateValue: true    # Render згенерує довгий секрет (проходить ≥32)
+      - key: DATABASE_URL
+        sync: false            # Neon: postgresql+asyncpg://user:pass@host/db
+      - key: BASE_URL
+        sync: false            # після 1-го деплою впиши https://<цей сервіс>.onrender.com
+      - key: FRONTEND_RETURN_URL
+        value: https://achivo.pages.dev/auth/callback#token={token}
+      - key: CORS_ORIGINS
+        value: https://achivo.pages.dev
+      - key: AGENT_URL
+        value: http://127.0.0.1:57343

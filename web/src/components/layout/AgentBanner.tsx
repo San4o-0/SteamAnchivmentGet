@@ -7,15 +7,20 @@ const DOWNLOAD_URL = import.meta.env.VITE_AGENT_DOWNLOAD_URL;
 
 export function AgentBanner() {
   const t = useT();
-  const { data, isError, isLoading } = useAgentHealth();
+  const { data, status } = useAgentHealth();
   const win = isWindows();
 
-  if (isLoading) return null;
+  // Спираємось на `status` (останній ЗАВЕРШЕНИЙ запит), а не на `data`: у
+  // React Query v5 `data` тримає останній успішний результат навіть після
+  // помилки — тож перевірка на `data.steamRunning` показувала б «онлайн» уже
+  // після того, як агент відвалився. `status` під час фонового рефетчу тримає
+  // минулий результат, тож банер не мигає на кожному пінгу.
+  if (status === "pending") return null; // до першої відповіді — тихо
 
-  const offline = isError || !data;
-  const steamDown = data && !data.steamRunning;
+  const offline = status === "error"; // останній пінг упав → агент офлайн
+  const steamDown = status === "success" && !data?.steamRunning;
 
-  if (!offline && !steamDown) return null;
+  if (!offline && !steamDown) return null; // агент є і Steam живий → ховаємо
 
   // На Linux/macOS агент фізично не запуститься — це не помилка юзера, тож
   // показуємо спокійне інфо (не червоний алярм) і БЕЗ кнопки завантаження

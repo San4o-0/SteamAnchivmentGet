@@ -25,6 +25,45 @@ namespace SAM.Agent
     {
         private const string Host = "127.0.0.1";
         private const int Port = 57343;
+        private const long MaxBodyBytes = 64 * 1024; // ліміт тіла запиту (DoS-захист)
+
+        // Origin-allowlist: лише ці сайти можуть керувати агентом. Дефолт — dev,
+        // прод-домен(и) додаються через env ACHIVO_ALLOWED_ORIGINS (кома-розділені),
+        // напр. ACHIVO_ALLOWED_ORIGINS=https://achivo.app
+        private static readonly HashSet<string> AllowedOrigins = LoadAllowedOrigins();
+
+        private static HashSet<string> LoadAllowedOrigins()
+        {
+            var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "http://localhost:5173",
+                "http://127.0.0.1:5173",
+            };
+            string extra = Environment.GetEnvironmentVariable("ACHIVO_ALLOWED_ORIGINS");
+            if (!string.IsNullOrEmpty(extra))
+            {
+                foreach (string o in extra.Split(','))
+                {
+                    string trimmed = o.Trim().TrimEnd('/');
+                    if (trimmed.Length > 0) { set.Add(trimmed); }
+                }
+            }
+            return set;
+        }
+
+        private static bool IsOriginAllowed(string origin)
+        {
+            return origin != null && AllowedOrigins.Contains(origin.TrimEnd('/'));
+        }
+
+        // Захист від DNS-rebinding: приймаємо лише звернення на loopback-host.
+        private static bool IsHostAllowed(string host)
+        {
+            return host == Host + ":" + Port
+                || host == "localhost:" + Port
+                || host == Host
+                || host == "localhost";
+        }
 
         private readonly HttpListener _listener = new HttpListener();
         private readonly SteamUnlocker _unlocker = new SteamUnlocker();
@@ -99,7 +138,26 @@ namespace SAM.Agent
                 return;
             }
 
-            AddCorsHeaders(context.Response);
+            // DNS-rebinding guard: Host must be our loopback host, not attacker.com.
+            if (!IsHostAllowed(request.Headers["Host"] ?? string.Empty))
+            {
+                WriteJson(context, 403, new Dictionary<string, object> { ["error"] = "forbidden host" });
+                return;
+            }
+
+            // Origin allowlist: a cross-site page's fetch/XHR carries an Origin;
+            // if it is not the Achivo web app, refuse — otherwise ANY site the
+            // user visits could drive /unlock. Origin absent (native tools,
+            // same-origin) is allowed. This 403 also fails the CORS preflight,
+            // so the browser never sends the real POST from a foreign origin.
+            string origin = request.Headers["Origin"];
+            if (origin != null && !IsOriginAllowed(origin))
+            {
+                WriteJson(context, 403, new Dictionary<string, object> { ["error"] = "forbidden origin" });
+                return;
+            }
+
+            AddCorsHeaders(context.Response, origin);
 
             if (request.HttpMethod == "OPTIONS")
             {
@@ -231,6 +289,14 @@ namespace SAM.Agent
         {
             obj = null;
             error = null;
+            // Cap body size (DoS): reject an oversized/declared-huge payload before
+            // allocating. Unknown length (-1, chunked) is not used by our clients.
+            long declared = context.Request.ContentLength64;
+            if (declared > MaxBodyBytes)
+            {
+                error = "request body too large";
+                return false;
+            }
             try
             {
                 string raw;
@@ -258,9 +324,15 @@ namespace SAM.Agent
             WriteJson(context, 405, new Dictionary<string, object> { ["error"] = "method not allowed" });
         }
 
-        private static void AddCorsHeaders(HttpListenerResponse response)
+        private static void AddCorsHeaders(HttpListenerResponse response, string origin)
         {
-            response.AddHeader("Access-Control-Allow-Origin", "*");
+            // Reflect ONLY an allow-listed origin (never `*`). Origin is null for
+            // native/same-origin callers — then no ACAO is needed.
+            if (!string.IsNullOrEmpty(origin))
+            {
+                response.AddHeader("Access-Control-Allow-Origin", origin);
+                response.AddHeader("Vary", "Origin");
+            }
             response.AddHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
             response.AddHeader("Access-Control-Allow-Headers", "Content-Type");
             // Chrome Private Network Access: a request from a public HTTPS site

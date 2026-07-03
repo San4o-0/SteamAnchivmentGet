@@ -55,6 +55,11 @@ export const api = {
       method: "POST",
       body: body === undefined ? undefined : JSON.stringify(body),
     }),
+  put: <T>(path: string, body?: unknown) =>
+    request<T>(path, {
+      method: "PUT",
+      body: body === undefined ? undefined : JSON.stringify(body),
+    }),
 };
 
 export const STEAM_LOGIN_URL = `${BASE_URL}/auth/steam`;

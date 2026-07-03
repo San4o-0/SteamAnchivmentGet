@@ -1,4 +1,30 @@
 """Інтеграційні тести нових ендпоінтів: stats, settings, leaderboard, notifications."""
+import pytest
+
+from app.config import INSECURE_DEFAULT_SECRET, Settings
+
+
+# ---------- release-hardening ----------
+def test_player_invalid_steam_id_returns_400(client):
+    # Довільний ввід не має тригерити важкий deep-scan Steam.
+    r = client.get("/api/player/not-a-steamid")
+    assert r.status_code == 400
+
+
+def test_prod_config_rejects_default_secret():
+    # У проді дефолтний JWT-секрет => fail-fast.
+    with pytest.raises(RuntimeError):
+        Settings(env="prod", jwt_secret=INSECURE_DEFAULT_SECRET, steam_api_key="k").check_production()
+
+
+def test_prod_config_accepts_strong_secret():
+    Settings(
+        env="prod", jwt_secret="x" * 40, steam_api_key="k"
+    ).check_production()  # не кидає
+
+
+def test_dev_config_allows_default_secret():
+    Settings(env="dev", jwt_secret=INSECURE_DEFAULT_SECRET).check_production()  # не кидає
 
 
 # ---------- /api/stats ----------

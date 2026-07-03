@@ -1,5 +1,5 @@
 """GET /api/stats — агрегована статистика профілю (те саме джерело, що /api/me)."""
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..auth.deps import get_current_steam_id
@@ -15,7 +15,7 @@ from ..schemas import (
 )
 from ..services.aggregate import ProfileAggregate, build_profile_aggregate
 from ..services.assembler import to_ach_schema
-from ..steam.client import SteamClient
+from ..steam.client import SteamClient, is_steam_id64
 
 router = APIRouter(prefix="/api", tags=["stats"])
 
@@ -100,6 +100,10 @@ async def get_player(
     session: AsyncSession = Depends(get_session),
 ):
     """Публічний профіль будь-якого гравця (клік у Лізі). Лише публічні дані."""
+    # Валідуємо формат ДО важкого deep-scan: інакше довільний ввід тригерить
+    # ~180 запитів до Steam (амплифікація/DoS + вичерпання квоти).
+    if not is_steam_id64(steam_id):
+        raise HTTPException(status_code=400, detail="Invalid steamId (expected 17-digit steamID64)")
     async with SteamClient(session) as steam:
         agg = await build_profile_aggregate(steam, steam_id)
     return PlayerProfile(

@@ -101,7 +101,9 @@ class TokenResponse(CamelModel):
 
 # --- POST /api/game/{appId}/unlock ---
 class UnlockRequest(CamelModel):
-    ids: list[str]
+    # Ліміт довжини — захист від роздутого запиту (навіть якщо це legacy-проксі,
+    # яке фронт більше не кличе: unlock іде напряму браузер→агент).
+    ids: list[str] = Field(..., max_length=1000)
 
 
 class UnlockResultItem(CamelModel):

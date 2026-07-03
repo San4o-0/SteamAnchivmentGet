@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAgentHealth, useSettings, useUpdateSettings } from "@/api/hooks";
 import { setAgentUrl } from "@/api/agent";
+import { isWindows } from "@/lib/platform";
 import { PageLoader, Spinner } from "@/components/ui/Spinner";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { cn } from "@/lib/format";
@@ -347,6 +348,19 @@ function SettingsForm({ saved }: { saved: Settings }) {
 function AgentStatusLine() {
   const t = useT();
   const { data, isError, isLoading } = useAgentHealth();
+
+  // Не-Windows: агент недоступний у принципі — спокійна примітка замість
+  // оманливого «офлайн» (це не проблема з'єднання, а непідтримувана ОС).
+  if (!isWindows()) {
+    return (
+      <div className="mt-3 flex items-center gap-2.5" aria-live="polite">
+        <span className="h-2 w-2 shrink-0 rounded-full bg-accent/70" aria-hidden />
+        <span className="font-mono text-xs tracking-wide text-muted">
+          {t("banner.windowsOnly")}
+        </span>
+      </div>
+    );
+  }
 
   let dot = "bg-muted";
   let glow = "";

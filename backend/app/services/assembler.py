@@ -10,6 +10,11 @@ from ..steam.client import SteamClient
 from .roadmap import AchievementInput, rarity_tier
 from .stats import GameAch
 
+# Якщо для ачивки НЕМА глобального відсотка (даних Steam), НЕ вважаємо її 0%
+# (це кваліфікувалось би як mythic <1% і роздувало rarity_score/складність/ETA).
+# Трактуємо як звичайну (нейтрально), поки не з'явиться реальний відсоток.
+UNKNOWN_GLOBAL_PERCENT = 100.0
+
 
 def _icon_url(schema_ach: dict, unlocked: bool) -> str:
     return schema_ach.get("icon" if unlocked else "icongray") or schema_ach.get("icon", "")
@@ -39,7 +44,7 @@ async def build_achievements(
                 desc=s.get("description", ""),
                 icon=_icon_url(s, unlocked_map.get(api_name, False)),
                 unlocked=unlocked_map.get(api_name, False),
-                global_percent=global_map.get(api_name, 0.0),
+                global_percent=global_map.get(api_name, UNKNOWN_GLOBAL_PERCENT),
             )
         )
     return result

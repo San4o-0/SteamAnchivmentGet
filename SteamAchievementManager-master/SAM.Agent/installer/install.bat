@@ -17,10 +17,16 @@ echo.
 
 if not exist "%TARGET%" mkdir "%TARGET%"
 
+REM Stop a previously-installed instance so the .exe isn't locked during copy
+REM (otherwise re-install / upgrade fails). Ignore error if not running.
+taskkill /IM SAM.Agent.exe /F >nul 2>&1
+
 copy /Y "%SRC%SAM.Agent.exe"        "%TARGET%\" >nul || goto :fail
 copy /Y "%SRC%SAM.Agent.exe.config" "%TARGET%\" >nul
 copy /Y "%SRC%SAM.API.dll"          "%TARGET%\" >nul || goto :fail
 copy /Y "%SRC%run-hidden.vbs"       "%TARGET%\" >nul || goto :fail
+REM Ship the uninstaller alongside so removal works from the install dir.
+copy /Y "%SRC%uninstall.bat"        "%TARGET%\" >nul
 
 REM --- Autostart: a Startup-folder shortcut that runs the hidden launcher. ----
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^

@@ -19,5 +19,8 @@ export function clearToken(): void {
 }
 
 export function isAuthed(): boolean {
-  return mocksEnabled || getToken() !== null;
+  // Мок-байпас авторизації дозволений ЛИШЕ в dev-збірці. У прод-бандлі
+  // (import.meta.env.DEV === false) єдиний вхід — наявність токена, тож
+  // випадково увімкнені моки не відкриють /dashboard без входу.
+  return (import.meta.env.DEV && mocksEnabled) || getToken() !== null;
 }

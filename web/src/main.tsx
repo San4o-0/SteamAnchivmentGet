@@ -22,7 +22,9 @@ const queryClient = new QueryClient({
 });
 
 // Моки мають стартувати до рендера, інакше перші запити пройдуть повз них.
-enableMocks().then(() => {
+// .catch: якщо реєстрація service worker впаде (або воркер відсутній), усе одно
+// рендеримо — інакше був би білий екран без пояснення.
+function render() {
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
       <QueryClientProvider client={queryClient}>
@@ -34,4 +36,6 @@ enableMocks().then(() => {
       </QueryClientProvider>
     </StrictMode>,
   );
-});
+}
+
+enableMocks().then(render).catch(render);

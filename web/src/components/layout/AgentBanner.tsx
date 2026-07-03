@@ -1,11 +1,14 @@
 import { useAgentHealth } from "@/api/hooks";
 import { useT } from "@/lib/i18n";
+import { isWindows } from "@/lib/platform";
+import { cn } from "@/lib/format";
 
 const DOWNLOAD_URL = import.meta.env.VITE_AGENT_DOWNLOAD_URL;
 
 export function AgentBanner() {
   const t = useT();
   const { data, isError, isLoading } = useAgentHealth();
+  const win = isWindows();
 
   if (isLoading) return null;
 
@@ -14,22 +17,45 @@ export function AgentBanner() {
 
   if (!offline && !steamDown) return null;
 
+  // На Linux/macOS агент фізично не запуститься — це не помилка юзера, тож
+  // показуємо спокійне інфо (не червоний алярм) і БЕЗ кнопки завантаження
+  // непрацюючого exe.
+  const info = offline && !win;
+
   return (
     <div
       role="status"
-      className="flex items-center gap-3 border-b border-danger/40 bg-danger/10 px-6 py-2.5 text-sm text-danger shadow-[inset_0_-1px_0_rgba(0,0,0,0.3)]"
+      className={cn(
+        "flex items-center gap-3 border-b px-6 py-2.5 text-sm shadow-[inset_0_-1px_0_rgba(0,0,0,0.3)]",
+        info
+          ? "border-line/60 bg-surface/70 text-muted"
+          : "border-danger/40 bg-danger/10 text-danger",
+      )}
     >
       <span className="relative flex h-2 w-2">
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-danger/60" />
-        <span className="relative inline-flex h-2 w-2 rounded-full bg-danger" />
+        <span
+          className={cn(
+            "absolute inline-flex h-full w-full rounded-full",
+            info ? "bg-accent/50" : "animate-ping bg-danger/60",
+          )}
+        />
+        <span
+          className={cn(
+            "relative inline-flex h-2 w-2 rounded-full",
+            info ? "bg-accent" : "bg-danger",
+          )}
+        />
       </span>
-      {offline ? (
-        <span>{t("banner.offline")}</span>
-      ) : (
+
+      {steamDown ? (
         <span>{t("banner.steamDown")}</span>
+      ) : info ? (
+        <span>{t("banner.windowsOnly")}</span>
+      ) : (
+        <span>{t("banner.offline")}</span>
       )}
 
-      {offline && DOWNLOAD_URL && (
+      {offline && win && DOWNLOAD_URL && (
         <a
           href={DOWNLOAD_URL}
           download

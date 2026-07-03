@@ -19,11 +19,14 @@ $zip     = Join-Path $dist "AchivoAgent.zip"
 
 Write-Host "==> Building SAM.Agent (Release, x86)..." -ForegroundColor Cyan
 # SAM.API uses unsafe blocks (native string interop), so /unsafe is required.
-try {
-    dotnet build $proj -c Release -p:Platform=x86 -p:AllowUnsafeBlocks=true -v minimal
-} catch {
+# NB: do NOT pass -p:Platform=x86 — that redirects output to bin\x86\Release\net48
+# and breaks $bin below. The csproj's <PlatformTarget>x86</PlatformTarget> already
+# produces an x86 binary at the default bin\Release\net48 path.
+dotnet build $proj -c Release -p:AllowUnsafeBlocks=true -v minimal
+if ($LASTEXITCODE -ne 0) {
     Write-Host "dotnet build failed, trying msbuild..." -ForegroundColor Yellow
-    msbuild $proj /p:Configuration=Release /p:Platform=x86 /p:AllowUnsafeBlocks=true /v:minimal
+    msbuild $proj /p:Configuration=Release /p:AllowUnsafeBlocks=true /v:minimal
+    if ($LASTEXITCODE -ne 0) { throw "Build failed (dotnet and msbuild)." }
 }
 
 Write-Host "==> Assembling dist\out ..." -ForegroundColor Cyan

@@ -21,21 +21,43 @@ export function getAgentUrl(): string {
   }
 }
 
-export function setAgentUrl(url: string): void {
+// Приймаємо лише loopback-URL (агент — локальний): http://127.0.0.1|localhost[:port].
+// Повертає false і НЕ зберігає, якщо URL невалідний, щоб опис не «зламав» виклики.
+export function setAgentUrl(url: string): boolean {
+  const clean = url.trim().replace(/\/$/, "");
   try {
-    const clean = url.trim().replace(/\/$/, "");
-    if (clean) localStorage.setItem(STORAGE_KEY, clean);
-    else localStorage.removeItem(STORAGE_KEY);
+    if (!clean) {
+      localStorage.removeItem(STORAGE_KEY);
+      return true;
+    }
+    const u = new URL(clean);
+    const loopback =
+      u.hostname === "127.0.0.1" || u.hostname === "localhost" || u.hostname === "[::1]";
+    if (u.protocol !== "http:" || !loopback) return false;
+    localStorage.setItem(STORAGE_KEY, clean);
+    return true;
   } catch {
-    /* приватний режим / вимкнений storage — ігноруємо */
+    return false;
   }
 }
 
+// Таймаут: завислий агент (прийняв з'єднання, але не відповідає) інакше
+// лишав би health-запит вічно pending і банер «офлайн» ніколи б не з'явився.
+const AGENT_TIMEOUT_MS = 4000;
+
 async function agentFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${getAgentUrl()}${path}`, {
-    ...init,
-    headers: { "Content-Type": "application/json", ...init?.headers },
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), AGENT_TIMEOUT_MS);
+  let res: Response;
+  try {
+    res = await fetch(`${getAgentUrl()}${path}`, {
+      ...init,
+      signal: controller.signal,
+      headers: { "Content-Type": "application/json", ...init?.headers },
+    });
+  } finally {
+    clearTimeout(timer);
+  }
 
   if (!res.ok) {
     let message = res.statusText;

@@ -50,14 +50,23 @@ async def resolve_steam_id(raw: str) -> str | None:
         return None  # незрозумілий URL, не vanity
 
     settings = get_settings()
-    async with httpx.AsyncClient(timeout=15.0) as http:
-        resp = await http.get(
-            f"{BASE}/ISteamUser/ResolveVanityURL/v1/",
-            params={"key": settings.steam_api_key, "vanityurl": vanity},
-        )
-        resp.raise_for_status()
-        data = resp.json().get("response", {})
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as http:
+            resp = await http.get(
+                f"{BASE}/ISteamUser/ResolveVanityURL/v1/",
+                params={"key": settings.steam_api_key, "vanityurl": vanity},
+            )
+            resp.raise_for_status()
+            data = resp.json().get("response", {})
+    except httpx.HTTPError:
+        # Збій Steam не має валити /auth/manual у 500 — трактуємо як «не розпізнано».
+        return None
     return data.get("steamid") if data.get("success") == 1 else None
+
+
+def is_steam_id64(value: str) -> bool:
+    """True, якщо рядок — валідний steamID64 (17 цифр, 7656119…)."""
+    return bool(_STEAMID64_RE.match((value or "").strip()))
 
 
 class SteamClient:
@@ -85,7 +94,14 @@ class SteamClient:
         if row is not None and row.age_seconds() < ttl:
             return row.payload
 
-        payload = await fetch()
+        try:
+            payload = await fetch()
+        except httpx.HTTPError:
+            # Steam недоступний / приватний профіль / 429 / таймаут: НЕ 500-имо.
+            # Віддаємо протермінований кеш, якщо є (краще за порожнечу), інакше {}
+            # — і НЕ кешуємо збій, щоб при відновленні Steam одразу підтягти дані.
+            # Усі виклики читають результат через .get(...), тож {} безпечне.
+            return row.payload if row is not None else {}
 
         if row is None:
             self._session.add(CacheEntry(key=key, payload=payload))

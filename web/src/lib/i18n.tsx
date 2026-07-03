@@ -151,6 +151,8 @@ const uk: Dict = {
   "banner.steamDown":
     "Агент працює, але Steam не запущено. Відкрий Steam і зайди в акаунт.",
   "banner.download": "Завантажити агент",
+  "banner.windowsOnly":
+    "Розблокування ачивок доступне лише на Windows. На Linux/macOS можна переглядати профіль, ігри й статистику.",
   // library
   "lib.eyebrow": "Бібліотека",
   "lib.yourGames": "Твої ігри",
@@ -430,6 +432,8 @@ const en: Dict = {
   "banner.steamDown":
     "The agent is running, but Steam isn't. Open Steam and sign in to your account.",
   "banner.download": "Download agent",
+  "banner.windowsOnly":
+    "Achievement unlocking is Windows-only. On Linux/macOS you can still browse your profile, games and stats.",
   "lib.eyebrow": "Library",
   "lib.yourGames": "Your Games",
   "lib.loading": "Loading library",

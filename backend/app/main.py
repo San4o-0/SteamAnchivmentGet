@@ -33,12 +33,17 @@ def create_app() -> FastAPI:
         version="0.1.0",
         description="Бекенд трекінгу Steam-ачивок (Потік 1: мозок + roadmap).",
         lifespan=lifespan,
+        # У проді ховаємо інтерактивну документацію.
+        docs_url=None if settings.is_prod else "/docs",
+        redoc_url=None if settings.is_prod else "/redoc",
+        openapi_url=None if settings.is_prod else "/openapi.json",
     )
 
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins_list,
-        allow_credentials=True,
+        # Bearer-токен у заголовку, cookies не використовуються — credentials зайві.
+        allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
     )

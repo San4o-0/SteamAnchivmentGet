@@ -3,9 +3,8 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { api, ApiError } from "./client";
+import { api } from "./client";
 import { agentHealth, agentUnlock } from "./agent";
-import { getToken } from "@/lib/auth";
 import type {
   FriendsResponse,
   GameDetail,
@@ -31,24 +30,6 @@ export const keys = {
   leaderboard: ["leaderboard"] as const,
   notifications: ["notifications"] as const,
 };
-
-const BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
-
-// api-клієнт (client.ts) віддає лише get/post — для PUT /api/settings
-// робимо самодостатній запит із тими самими заголовками/семантикою помилок.
-async function putJson<T>(path: string, body: unknown): Promise<T> {
-  const token = getToken();
-  const res = await fetch(`${BASE_URL}${path}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) throw new ApiError(res.status, res.statusText);
-  return (await res.json()) as T;
-}
 
 export function useMe() {
   return useQuery({
@@ -128,7 +109,7 @@ export function useUpdateSettings() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (settings: Settings) =>
-      putJson<Settings>("/api/settings", settings),
+      api.put<Settings>("/api/settings", settings),
     onSuccess: (data) => {
       qc.setQueryData(keys.settings, data);
       qc.invalidateQueries({ queryKey: keys.settings });

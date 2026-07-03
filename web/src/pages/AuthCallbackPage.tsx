@@ -4,16 +4,23 @@ import { setToken } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
 import { Spinner } from "@/components/ui/Spinner";
 
-// Точка приземлення після Steam OpenID: /auth/callback?token=<jwt>.
+// Точка приземлення після Steam OpenID: /auth/callback#token=<jwt>.
+// Токен приходить у FRAGMENT (#), а не query (?) — фрагмент не тече в логи
+// сервера/проксі й у Referer. Лишаємо фолбек на ?token= для сумісності.
 export function AuthCallbackPage() {
   const t = useT();
   const [params] = useSearchParams();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const token = params.get("token");
+    const fromHash = new URLSearchParams(
+      window.location.hash.replace(/^#/, ""),
+    ).get("token");
+    const token = fromHash ?? params.get("token");
     if (token) {
       setToken(token);
+      // Прибираємо токен з адресного рядка (історія/скріншоти).
+      window.history.replaceState(null, "", window.location.pathname);
       navigate("/dashboard", { replace: true });
     } else {
       navigate("/login", { replace: true });

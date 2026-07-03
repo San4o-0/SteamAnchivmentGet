@@ -31,8 +31,17 @@ jobs:
 
       - name: Publish GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
-        with:
-          files: SteamAchievementManager-master/SAM.Agent/dist/AchivoAgent.zip
-          name: Achivo Agent ${{ github.ref_name }}
-          generate_release_notes: true
+        shell: pwsh
+        env:
+          # Вбудований gh (офіційний, уже на runner-і) замість стороннього
+          # action — прибирає supply-chain ризик. Публікуємо zip + SHA-256,
+          # щоб завантажувачі могли перевірити цілісність.
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $zip = "SteamAchievementManager-master/SAM.Agent/dist/AchivoAgent.zip"
+          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+          "$hash  AchivoAgent.zip" | Out-File -Encoding ascii "$zip.sha256"
+          gh release create $env:GITHUB_REF_NAME `
+            $zip "$zip.sha256" `
+            --title "Achivo Agent $env:GITHUB_REF_NAME" `
+            --notes "Local unlock agent for Windows.`n`nSHA-256 (AchivoAgent.zip): ``$hash``"

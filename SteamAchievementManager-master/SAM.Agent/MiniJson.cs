@@ -19,6 +19,11 @@ namespace SAM.Agent
     /// </summary>
     internal static class MiniJson
     {
+        // Захист від переповнення стека: глибоко вкладене тіло (напр. "[[[[…")
+        // інакше кинуло б StackOverflowException, який у .NET НЕ ловиться і
+        // вбиває весь процес агента. Через CORS-дірку це був би DoS-вектор.
+        private const int MaxDepth = 64;
+
         #region Parsing
 
         public static object Parse(string text)
@@ -29,7 +34,7 @@ namespace SAM.Agent
             }
 
             int index = 0;
-            object value = ParseValue(text, ref index);
+            object value = ParseValue(text, ref index, 0);
             SkipWhitespace(text, ref index);
             if (index != text.Length)
             {
@@ -48,8 +53,13 @@ namespace SAM.Agent
             return obj;
         }
 
-        private static object ParseValue(string s, ref int i)
+        private static object ParseValue(string s, ref int i, int depth)
         {
+            if (depth > MaxDepth)
+            {
+                throw new FormatException("JSON nesting too deep.");
+            }
+
             SkipWhitespace(s, ref i);
             if (i >= s.Length)
             {
@@ -59,8 +69,8 @@ namespace SAM.Agent
             char c = s[i];
             switch (c)
             {
-                case '{': return ParseObjectInternal(s, ref i);
-                case '[': return ParseArray(s, ref i);
+                case '{': return ParseObjectInternal(s, ref i, depth);
+                case '[': return ParseArray(s, ref i, depth);
                 case '"': return ParseString(s, ref i);
                 case 't':
                 case 'f': return ParseBool(s, ref i);
@@ -69,7 +79,7 @@ namespace SAM.Agent
             }
         }
 
-        private static Dictionary<string, object> ParseObjectInternal(string s, ref int i)
+        private static Dictionary<string, object> ParseObjectInternal(string s, ref int i, int depth)
         {
             var result = new Dictionary<string, object>(StringComparer.Ordinal);
             i++; // consume '{'
@@ -90,7 +100,7 @@ namespace SAM.Agent
                     throw new FormatException("Expected ':' in JSON object.");
                 }
                 i++; // consume ':'
-                object value = ParseValue(s, ref i);
+                object value = ParseValue(s, ref i, depth + 1);
                 result[key] = value;
 
                 SkipWhitespace(s, ref i);
@@ -105,7 +115,7 @@ namespace SAM.Agent
             return result;
         }
 
-        private static List<object> ParseArray(string s, ref int i)
+        private static List<object> ParseArray(string s, ref int i, int depth)
         {
             var result = new List<object>();
             i++; // consume '['
@@ -114,7 +124,7 @@ namespace SAM.Agent
 
             while (true)
             {
-                object value = ParseValue(s, ref i);
+                object value = ParseValue(s, ref i, depth + 1);
                 result.Add(value);
 
                 SkipWhitespace(s, ref i);

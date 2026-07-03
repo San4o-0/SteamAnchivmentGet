@@ -59,11 +59,18 @@ async function agentFetch<T>(
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   let res: Response;
   try {
-    res = await fetch(`${getAgentUrl()}${path}`, {
+    // Chrome Local Network Access: a public HTTPS page reaching 127.0.0.1 is a
+    // "local network request". Marking it with targetAddressSpace:"local" makes
+    // Chrome PROMPT the user for permission (and allow it over HTTP) instead of
+    // silently blocking it. Unknown to older browsers / not yet in the TS
+    // RequestInit type, so we widen the type; other browsers ignore it.
+    const fetchInit: RequestInit & { targetAddressSpace?: "local" | "private" } = {
       ...init,
       signal: controller.signal,
       headers: { "Content-Type": "application/json", ...init?.headers },
-    });
+      targetAddressSpace: "local",
+    };
+    res = await fetch(`${getAgentUrl()}${path}`, fetchInit);
   } finally {
     clearTimeout(timer);
   }

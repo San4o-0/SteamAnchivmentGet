@@ -95,7 +95,7 @@ export function DashboardPage() {
 
       {/* ---------- Stats ---------- */}
       <section>
-        <h2 className="animate-rise eyebrow mb-3" style={stagger(1)}>
+        <h2 className="animate-rise eyebrow-chip mb-3" style={stagger(1)}>
           {t("dash.overall")}
         </h2>
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -135,7 +135,7 @@ export function DashboardPage() {
       {/* ---------- Top achievements ---------- */}
       <section>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="eyebrow">{t("dash.topRare")}</h2>
+          <h2 className="eyebrow-chip">{t("dash.topRare")}</h2>
           <WormLink
             to="/statistics"
             className="px-3.5 py-1 font-mono text-[0.7rem]"
@@ -195,7 +195,7 @@ export function DashboardPage() {
       {/* ---------- Next up games ---------- */}
       <section>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="eyebrow">{t("dash.nextGoals")}</h2>
+          <h2 className="eyebrow-chip">{t("dash.nextGoals")}</h2>
           <WormLink
             to="/library"
             className="px-3.5 py-1 font-mono text-[0.7rem]"

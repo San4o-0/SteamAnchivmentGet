@@ -84,6 +84,12 @@
     @apply font-mono text-[0.66rem] uppercase tracking-[0.24em] text-muted;
   }
 
+  /* Section label inside a translucent frame — keeps quiet captions legible
+     over the dark ambient background. Brighter ink + faint bordered pill. */
+  .eyebrow-chip {
+    @apply eyebrow inline-flex items-center rounded-md border border-line/70 bg-surface/60 px-2.5 py-1 text-ink/80 backdrop-blur-sm;
+  }
+
   /* HUD panel: graphite surface, crisp cool border, faint top sheen.
      Elevation comes from --shadow-panel, which swaps per theme. */
   .panel {

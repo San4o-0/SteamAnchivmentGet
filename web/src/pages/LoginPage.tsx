@@ -5,6 +5,7 @@ import { setToken } from "@/lib/auth";
 import { useT } from "@/lib/i18n";
 import { stagger } from "@/lib/motion";
 import type { TokenResponse } from "@/api/types";
+import logo from "@/assets/logo.png";
 
 // Дрібні частинки, що повільно спливають угору — «жива» атмосфера позаду тексту.
 const PARTICLES = [
@@ -99,12 +100,13 @@ export function LoginPage() {
           />
         </svg>
 
-        <div
-          className="animate-rise bob mb-8 inline-grid h-16 w-16 place-items-center rounded-2xl border border-accent/50 bg-accent/12 text-3xl text-accent shadow-glow glow-gold"
+        <img
+          src={logo}
+          alt="Achivo"
+          draggable={false}
+          className="animate-rise bob mx-auto mb-6 w-full max-w-[380px] select-none"
           style={stagger(0, 90)}
-        >
-          ◆
-        </div>
+        />
 
         <div className="animate-rise eyebrow mb-4" style={stagger(1, 90)}>
           {t("login.eyebrow")}

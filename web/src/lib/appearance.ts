@@ -37,7 +37,7 @@ export const ACCENTS: { value: Accent; label: string; swatch: string }[] = [
   { value: "magenta", label: "Magenta", swatch: "#ec4899" },
 ];
 
-const DEFAULTS = { theme: "dark" as Theme, accent: "violet" as Accent, lang: "uk" as Lang };
+const DEFAULTS = { theme: "dark" as Theme, accent: "violet" as Accent, lang: "en" as Lang };
 
 function read<T extends string>(key: string, fallback: T, allowed: readonly T[]): T {
   try {

@@ -4,6 +4,7 @@ import { useMe } from "@/api/hooks";
 import { clearToken } from "@/lib/auth";
 import { cn } from "@/lib/format";
 import { useT } from "@/lib/i18n";
+import logo from "@/assets/logo.png";
 
 const nav = [
   { to: "/dashboard", key: "nav.dashboard", icon: DashIcon },
@@ -28,19 +29,18 @@ export function Sidebar() {
 
   return (
     <aside className="flex w-60 shrink-0 flex-col border-r border-line/70 bg-surface/60">
-      <div className="flex items-center gap-3 border-b border-line/40 px-5 py-5">
-        <span className="grid h-9 w-9 place-items-center rounded-md border border-accent/50 bg-accent/15 text-accent shadow-glow glow-gold">
-          ◆
-        </span>
-        <div className="leading-tight">
-          <div className="font-display text-xl font-bold tracking-tight text-ink">
-            ACHIVO
-          </div>
-          <div className="eyebrow mt-0.5 tracking-[0.24em] text-accent/80">
-            {t("brand.tag")}
-          </div>
-        </div>
-      </div>
+      <Link
+        to="/dashboard"
+        className="block border-b border-line/40 px-2 py-6"
+        aria-label="Achivo"
+      >
+        <img
+          src={logo}
+          alt="Achivo"
+          draggable={false}
+          className="mx-auto w-full max-w-[220px] select-none"
+        />
+      </Link>
 
       <nav className="flex flex-col gap-1 px-3 py-4">
         {nav.map(({ to, key, icon: Icon }) => (

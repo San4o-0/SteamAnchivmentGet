@@ -174,7 +174,7 @@ class PlayerProfile(CamelModel):
 # --- /api/settings ---
 class UserSettings(CamelModel):
     agent_url: str = Field("http://127.0.0.1:57343", alias="agentUrl")
-    language: Literal["uk", "en"] = "uk"
+    language: Literal["uk", "en"] = "en"
     theme: Literal["dark", "light"] = "dark"
     accent: Literal["violet", "blue", "green", "gold", "magenta"] = "violet"
     background: Literal["cosmos", "aurora", "rain", "grid", "fireflies", "off"] = "cosmos"

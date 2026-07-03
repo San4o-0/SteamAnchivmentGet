@@ -78,7 +78,7 @@ def test_settings_defaults(client):
     data = client.get("/api/settings").json()
     assert data == {
         "agentUrl": "http://127.0.0.1:57343",
-        "language": "uk",
+        "language": "en",
         "theme": "dark",
         "accent": "violet",
         "background": "cosmos",

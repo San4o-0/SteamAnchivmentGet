@@ -44,9 +44,11 @@ export const handlers = [
     return HttpResponse.json(game);
   }),
 
-  http.post("*/api/game/:appId/unlock", async ({ request }) => {
+  // Unlock іде НАПРЯМУ в локальний агент (POST 127.0.0.1:57343/unlock/batch).
+  // Тіло контракту агента: { appId, ids }, відповідь: { ok, results:[{id,ok}] }.
+  http.post("*/unlock/batch", async ({ request }) => {
     await delay(700);
-    const body = (await request.json()) as { ids: string[] };
+    const body = (await request.json()) as { appId?: number; ids?: string[] };
     const ids = body?.ids ?? [];
 
     // Демо-шлях помилки: ачивки з суфіксом "_secret" агент відхиляє.
@@ -66,8 +68,8 @@ export const handlers = [
     return HttpResponse.json(response);
   }),
 
-  // Бекенд проксіює це з GET http://127.0.0.1:57343/health локального агента.
-  http.get("*/api/agent/health", async () => {
+  // Health локального агента: браузер читає його НАПРЯМУ (127.0.0.1:57343/health).
+  http.get("*/health", async () => {
     await delay(120);
     return HttpResponse.json({ steamRunning: true, version: "1.4.0" });
   }),

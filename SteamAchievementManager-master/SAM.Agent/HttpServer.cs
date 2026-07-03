@@ -263,6 +263,13 @@ namespace SAM.Agent
             response.AddHeader("Access-Control-Allow-Origin", "*");
             response.AddHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
             response.AddHeader("Access-Control-Allow-Headers", "Content-Type");
+            // Chrome Private Network Access: a request from a public HTTPS site
+            // (achivo.app) to a loopback address is a "private network request".
+            // The browser sends a preflight with Access-Control-Request-Private-
+            // Network: true, and blocks the call unless we grant it explicitly.
+            response.AddHeader("Access-Control-Allow-Private-Network", "true");
+            // Cache the preflight for 10 min so we are not re-asked on every call.
+            response.AddHeader("Access-Control-Max-Age", "600");
         }
 
         private static void WriteJson(HttpListenerContext context, int statusCode, object body)

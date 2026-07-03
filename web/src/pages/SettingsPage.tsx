@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useAgentHealth, useSettings, useUpdateSettings } from "@/api/hooks";
+import { setAgentUrl } from "@/api/agent";
 import { PageLoader, Spinner } from "@/components/ui/Spinner";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { cn } from "@/lib/format";
@@ -128,6 +129,9 @@ function SettingsForm({ saved }: { saved: Settings }) {
     e.preventDefault();
     if (!dirty || mutation.isPending) return;
     setJustSaved(false);
+    // Адреса агента керує ПРЯМИМИ викликами браузер→агент (health/unlock),
+    // тож зберігаємо її локально, а не лише в серверних налаштуваннях.
+    setAgentUrl(form.agentUrl.trim());
     mutation.mutate(
       { ...form, agentUrl: form.agentUrl.trim() },
       {

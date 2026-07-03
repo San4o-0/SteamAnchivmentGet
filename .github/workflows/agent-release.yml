@@ -1,0 +1,38 @@
+name: Build & release Achivo Agent
+
+# Пуш тега виду agent-v1.2.3 -> CI збирає агент і публікує AchivoAgent.zip
+# у GitHub Release. Локальний gh/автентифікація не потрібні — Actions робить
+# усе своїм GITHUB_TOKEN.
+on:
+  push:
+    tags:
+      - "agent-v*"
+  # Дозволяє запустити вручну з вкладки Actions (без публікації релізу).
+  workflow_dispatch:
+
+permissions:
+  contents: write # потрібно, щоб створити реліз і завантажити ассет
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build & assemble AchivoAgent.zip
+        shell: pwsh
+        run: ./SteamAchievementManager-master/SAM.Agent/build-dist.ps1
+
+      - name: Upload artifact (для ручних запусків)
+        uses: actions/upload-artifact@v4
+        with:
+          name: AchivoAgent
+          path: SteamAchievementManager-master/SAM.Agent/dist/AchivoAgent.zip
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: SteamAchievementManager-master/SAM.Agent/dist/AchivoAgent.zip
+          name: Achivo Agent ${{ github.ref_name }}
+          generate_release_notes: true

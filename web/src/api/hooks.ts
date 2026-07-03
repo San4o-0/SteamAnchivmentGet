@@ -4,9 +4,9 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { api, ApiError } from "./client";
+import { agentHealth, agentUnlock } from "./agent";
 import { getToken } from "@/lib/auth";
 import type {
-  AgentHealth,
   FriendsResponse,
   GameDetail,
   LeaderboardEntry,
@@ -18,7 +18,6 @@ import type {
   Roadmap,
   Settings,
   Stats,
-  UnlockResponse,
 } from "./types";
 
 export const keys = {
@@ -81,23 +80,25 @@ export function useRoadmap(appId: number) {
   });
 }
 
-// Помилка = агент офлайн (показуємо банером), не блокує решту UI.
+// Health читаємо НАПРЯМУ з локального агента (127.0.0.1:57343), а не через
+// бекенд: захостений бекенд не бачить чужого loopback. Помилка = агент офлайн
+// (показуємо банером), не блокує решту UI.
 export function useAgentHealth() {
   return useQuery({
     queryKey: keys.health,
-    queryFn: () => api.get<AgentHealth>("/api/agent/health"),
+    queryFn: () => agentHealth(),
     refetchInterval: 15_000,
     retry: false,
     staleTime: 10_000,
   });
 }
 
-// Після unlock інвалідуємо game/roadmap/library/me, щоб UI відразу оновився.
+// Unlock теж іде НАПРЯМУ в агент (POST /unlock/batch). Після успіху інвалідуємо
+// game/roadmap/library/me, щоб UI підтягнув новий стан із бекенду.
 export function useUnlock(appId: number) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (ids: string[]) =>
-      api.post<UnlockResponse>(`/api/game/${appId}/unlock`, { ids }),
+    mutationFn: (ids: string[]) => agentUnlock(appId, ids),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: keys.game(appId) });
       qc.invalidateQueries({ queryKey: keys.roadmap(appId) });

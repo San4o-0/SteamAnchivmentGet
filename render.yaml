@@ -8,7 +8,7 @@ services:
     rootDir: backend
     dockerfilePath: ./Dockerfile
     plan: free
-    healthCheckPath: /api/agent/health
+    healthCheckPath: /health
     envVars:
       - key: ENV
         value: prod

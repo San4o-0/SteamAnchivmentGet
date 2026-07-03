@@ -27,9 +27,9 @@ namespace SAM.Agent
         private const int Port = 57343;
         private const long MaxBodyBytes = 64 * 1024; // ліміт тіла запиту (DoS-захист)
 
-        // Origin-allowlist: лише ці сайти можуть керувати агентом. Дефолт — dev,
-        // прод-домен(и) додаються через env ACHIVO_ALLOWED_ORIGINS (кома-розділені),
-        // напр. ACHIVO_ALLOWED_ORIGINS=https://achivo.app
+        // Origin-allowlist: лише ці сайти можуть керувати агентом. Дефолт — dev
+        // + прод (achivo.pages.dev). Додаткові домени — через env
+        // ACHIVO_ALLOWED_ORIGINS (кома-розділені), напр. власний кастомний домен.
         private static readonly HashSet<string> AllowedOrigins = LoadAllowedOrigins();
 
         private static HashSet<string> LoadAllowedOrigins()
@@ -38,6 +38,7 @@ namespace SAM.Agent
             {
                 "http://localhost:5173",
                 "http://127.0.0.1:5173",
+                "https://achivo.pages.dev",
             };
             string extra = Environment.GetEnvironmentVariable("ACHIVO_ALLOWED_ORIGINS");
             if (!string.IsNullOrEmpty(extra))

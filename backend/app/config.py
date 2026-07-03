@@ -32,8 +32,11 @@ class Settings(BaseSettings):
     # Локальний агент (Потік 2)
     agent_url: str = "http://127.0.0.1:57343"
 
-    # CORS (кома-розділений список)
-    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    # CORS (кома-розділений список). Прод-origin (achivo.pages.dev) у дефолті,
+    # додаткові домени/preview — через env CORS_ORIGINS.
+    cors_origins: str = (
+        "http://localhost:5173,http://127.0.0.1:5173,https://achivo.pages.dev"
+    )
 
     # Кеш
     cache_ttl_seconds: int = 1800

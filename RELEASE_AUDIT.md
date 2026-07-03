@@ -9,7 +9,7 @@
 
 ## 🔴 БЛОКЕРИ
 
-- [x] **B1. Агент: origin-allowlist замість `CORS *`.** Reflect лише дозволений Origin (dev-дефолти + env `ACHIVO_ALLOWED_ORIGINS`), інакше 403. Прод-домен додати в env — `[D]`. `HttpServer.cs`.
+- [x] **B1. Агент: origin-allowlist замість `CORS *`.** Reflect лише дозволений Origin, інакше 403. Прод-домен `https://achivo.pages.dev` вбудований у дефолт allowlist (env `ACHIVO_ALLOWED_ORIGINS` — для додаткових доменів). `HttpServer.cs`. ✅
 - [x] **B2. JWT-секрет: fail-fast у проді** (`ENV=prod` + дефолтний/короткий секрет → RuntimeError). `config.py`.
 - [x] **B3. Мок-байпас лише в DEV** (`import.meta.env.DEV`) + `enableMocks` не стартує в прод-білді + `.env.example` → `mocks=false`. `auth.ts`, `browser.ts`.
 - [x] **B4. MiniJson: ліміт глибини рекурсії (64)** — прибрано stack-overflow DoS. `MiniJson.cs`.
@@ -35,7 +35,7 @@
 - [x] **M5. Cap `ids` (≤1000) на UnlockRequest.** `schemas.py`.
 - [x] **M6. CI: вбудований `gh` замість стороннього action** + публікація SHA-256. `agent-release.yml`.
 - [x] **M7. `install.bat`: taskkill перед копіюванням** + `uninstall.bat` у цільову теку.
-- [D] **M8. CORS бекенду + return-URL: прод-origin** (механізм env готовий).
+- [x] **M8. CORS бекенду + return-URL: прод-origin.** `https://achivo.pages.dev` у дефолті `cors_origins`; `.env.example` містить прод BASE_URL/FRONTEND_RETURN_URL. `config.py`. ✅
 - [ops] **M9. In-memory settings/notifications → БД; sqlite → Postgres.**
 - [ops] **M10. `/notifications` кешувати.**
 
@@ -53,7 +53,7 @@
 ---
 
 ## Лишилось (не код / рішення)
-- **Домен фронта** → B1 фінальний origin (env `ACHIVO_ALLOWED_ORIGINS`), M8.
+- ~~**Домен фронта** → B1 фінальний origin, M8.~~ ✅ `https://achivo.pages.dev` вписано (агент allowlist + бекенд CORS).
 - **Модель auth** (H5): гейт unlock/settings за OpenID?
 - **Ротація ключів** (H7), **Postgres/persist** (M9), **підпис exe** (L8) — деплой.
 - **Фронт-тести** (H6), **cross-browser PNA** (L7).

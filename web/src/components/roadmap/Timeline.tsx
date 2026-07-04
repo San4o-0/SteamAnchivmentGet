@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import type { Roadmap, RoadmapGroup } from "@/api/types";
+import { useAgentProgress } from "@/api/hooks";
 import { UnlockButton } from "@/components/ui/UnlockButton";
 import { formatEta } from "@/lib/format";
 import { stagger } from "@/lib/motion";
@@ -16,6 +17,9 @@ const GROUP_META: Record<RoadmapGroup, { title: string; hint: string }> = {
 export function Timeline({ appId, roadmap }: { appId: number; roadmap: Roadmap }) {
   const t = useT();
   const { steps } = roadmap;
+  // Progress/stat-gated achievements (from the agent) can't be force-unlocked.
+  const { data: agentProgress } = useAgentProgress(appId);
+  const progressMap = agentProgress?.ok ? agentProgress.progress : undefined;
 
   // The hardest step = lowest globalPercent among the not-yet-unlocked ones.
   const hardestId = useMemo(() => {
@@ -29,6 +33,10 @@ export function Timeline({ appId, roadmap }: { appId: number; roadmap: Roadmap }
   const remainingIds = steps
     .filter((s) => !s.ach.unlocked)
     .map((s) => s.ach.id);
+
+  // "Unlock all" only fires for achievements the agent CAN set — progress-gated
+  // ones would just fail, so exclude them from the batch.
+  const unlockableIds = remainingIds.filter((id) => !progressMap?.[id]);
 
   const totalEta = steps
     .filter((s) => !s.ach.unlocked)
@@ -71,8 +79,8 @@ export function Timeline({ appId, roadmap }: { appId: number; roadmap: Roadmap }
             </div>
           </div>
         </div>
-        {remainingIds.length > 0 && (
-          <UnlockButton appId={appId} ids={remainingIds} label={`${t("road.unlockAll")} (${remainingIds.length})`} />
+        {unlockableIds.length > 0 && (
+          <UnlockButton appId={appId} ids={unlockableIds} label={`${t("road.unlockAll")} (${unlockableIds.length})`} />
         )}
       </div>
 
@@ -106,6 +114,7 @@ export function Timeline({ appId, roadmap }: { appId: number; roadmap: Roadmap }
                       step={step}
                       isHardest={step.ach.id === hardestId}
                       style={stagger(offset + i + 1)}
+                      progressGate={progressMap?.[step.ach.id]}
                     />
                   ))}
                 </ol>

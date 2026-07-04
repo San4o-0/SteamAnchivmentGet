@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { RoadmapStep as Step } from "@/api/types";
+import type { AgentProgressEntry, RoadmapStep as Step } from "@/api/types";
 import { RarityBadge } from "@/components/ui/RarityBadge";
 import { UnlockButton } from "@/components/ui/UnlockButton";
 import { cn, formatEta } from "@/lib/format";
@@ -10,6 +10,8 @@ interface Props {
   step: Step;
   isHardest: boolean;
   style?: CSSProperties;
+  // Set when this achievement is progress/stat-gated (agent can't force it).
+  progressGate?: AgentProgressEntry;
 }
 
 // Rarity-tinted glow border for the inventory-slot card — the loot tier
@@ -23,10 +25,11 @@ const rarityRing: Record<string, string> = {
   mythic: "border-mythic/55 shadow-mythic",
 };
 
-export function RoadmapStep({ appId, step, isHardest, style }: Props) {
+export function RoadmapStep({ appId, step, isHardest, style, progressGate }: Props) {
   const t = useT();
   const { ach } = step;
   const done = ach.unlocked;
+  const gated = !done && progressGate != null;
   const mythic = ach.rarityTier === "mythic";
   // Топ-дроп: legendary/mythic тір або найважча ачивка маршруту.
   const topDrop = mythic || ach.rarityTier === "legendary" || isHardest;
@@ -99,10 +102,22 @@ export function RoadmapStep({ appId, step, isHardest, style }: Props) {
           <span className="mt-2 inline-flex items-center gap-1 rounded border border-line bg-raised/60 px-2 py-0.5 font-mono text-[0.62rem] uppercase tracking-wider text-muted">
             ETA ≈ <span className="text-ink/90">{formatEta(step.etaMinutes)}</span>
           </span>
+          {gated && (
+            <span className="ml-2 mt-2 inline-flex items-center gap-1 rounded border border-accent/40 bg-accent/10 px-2 py-0.5 font-mono text-[0.62rem] font-semibold uppercase tracking-wider text-accent">
+              <span aria-hidden>🎯</span>
+              {t("ach.goal")} {progressGate?.max}
+            </span>
+          )}
         </div>
 
         <div className="shrink-0">
-          <UnlockButton appId={appId} ids={[ach.id]} unlocked={done} size="sm" />
+          <UnlockButton
+            appId={appId}
+            ids={[ach.id]}
+            unlocked={done}
+            size="sm"
+            disabledReason={gated ? t("unlock.progressReason") : undefined}
+          />
         </div>
       </div>
     </li>
